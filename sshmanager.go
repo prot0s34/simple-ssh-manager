@@ -9,6 +9,7 @@ import (
 	"os/user"
 	"time"
 
+	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
 
@@ -142,8 +143,8 @@ func showErrorAndReturnToList(app *tview.Application, list *tview.List, err erro
 	)
 
 	// Wait for Enter key press to return to the host list
-	app.SetInputCapture(func(event *tview.Event) *tview.Event {
-		if event.Key == tview.KeyEnter {
+	app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		if event.Key() == tcell.KeyEnter {
 			app.SetRoot(list, true)
 		}
 		return event
