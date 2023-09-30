@@ -7,9 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"os/user"
-	"time"
 
-	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
 
@@ -52,35 +50,27 @@ func main() {
 		list.AddItem(host.Name, "", 0, nil)
 	}
 
-	var connectingText *tview.TextView
-
 	// Define the function to connect to the selected host
 	list.SetSelectedFunc(func(index int, mainText, secondaryText string, shortcut rune) {
 		host := inventory.Hosts[index]
 
-		// Clear the list and show connecting indicator
-		list.Clear()
-		connectingText = tview.NewTextView().
-			SetText("Connecting...").
-			SetTextAlign(tview.AlignCenter)
-		app.SetRoot(connectingText, true)
+		if host.Username == "" {
+			fmt.Println("Error: Host username is missing in the inventory.")
+			os.Exit(1)
+		}
 
-		// Create a channel to handle the result of the connection attempt
-		resultCh := make(chan error)
+		// Close the TUI application
+		app.Stop()
 
-		// Connect to the host in a Goroutine
-		go func() {
-			resultCh <- connectToHost(host)
-		}()
+		// Launch the SSH connection in the default terminal using sshpass
+		cmd := exec.Command("sshpass", "-p", host.Password, "ssh", host.Username+"@"+host.Hostname)
+		cmd.Stdout = os.Stdout
+		cmd.Stdin = os.Stdin
+		cmd.Stderr = os.Stderr
 
-		// Wait for the connection result or timeout
-		select {
-		case err := <-resultCh:
-			if err != nil {
-				showErrorAndReturnToList(app, list, err)
-			}
-		case <-time.After(15 * time.Second):
-			showErrorAndReturnToList(app, list, fmt.Errorf("Connection timed out"))
+		if err := cmd.Run(); err != nil {
+			fmt.Println("Error:", err)
+			os.Exit(1)
 		}
 	})
 
@@ -111,42 +101,4 @@ func loadInventory(inventoryPath string) (*Inventory, error) {
 	}
 
 	return &inventory, nil
-}
-
-// connectToHost connects to the specified host using sshpass.
-func connectToHost(host Host) error {
-	cmd := exec.Command("sshpass", "-p", host.Password, "ssh", host.Username+"@"+host.Hostname)
-	cmd.Stdout = os.Stdout
-	cmd.Stdin = os.Stdin
-	cmd.Stderr = os.Stderr
-
-	return cmd.Run()
-}
-
-// showErrorAndReturnToList displays an error message and returns to the host list.
-func showErrorAndReturnToList(app *tview.Application, list *tview.List, err error) {
-	errorText := tview.NewTextView().
-		SetText("Error: " + err.Error()).
-		SetTextAlign(tview.AlignCenter)
-
-	returnButton := tview.NewTextView().
-		SetText("Return to Hosts List (Press Enter)").
-		SetTextAlign(tview.AlignCenter).
-		SetDynamicColors(true)
-
-	app.SetRoot(
-		tview.NewFlex().
-			SetDirection(tview.FlexRow).
-			AddItem(errorText, 0, 1, true).
-			AddItem(returnButton, 1, 1, false),
-		true,
-	)
-
-	// Wait for Enter key press to return to the host list
-	app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		if event.Key() == tcell.KeyEnter {
-			app.SetRoot(list, true)
-		}
-		return event
-	})
 }
