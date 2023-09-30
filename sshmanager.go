@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"os/user"
 
+	"github.com/gdamore/tcell"
 	"github.com/rivo/tview"
 )
 
@@ -44,11 +45,22 @@ func main() {
 
 	app := tview.NewApplication()
 
+	// Create a box with a title
+	box := tview.NewBox().
+		SetBorder(true).
+		SetBorderAttributes(tcell.RuneBoard).
+		SetTitle("[black:red]S[:yellow]i[:green]m[:darkcyan]l[:blue]e[:darkmagenta]-[:red]S[:yellow]S[:green]H[:darkmagenta]-[:blue]M[:red]a[:darkcyan]n[:yellow]a[:yellow]g[:red]e[:blue]r[white:-]")
+
 	// Create a list of hosts for the TUI
 	list := tview.NewList()
 	for _, host := range inventory.Hosts {
-		list.AddItem("host:"+host.Name, "user:"+host.Username, 0, nil)
+		list.AddItem("name:"+host.Name, "user:"+host.Username+" / hostname:"+host.Hostname, 0, nil)
 	}
+
+	flex := tview.NewFlex().
+		SetDirection(tview.FlexRow).
+		AddItem(box, 0, 1, false).
+		AddItem(list, 0, 2, true)
 
 	// Define the function to connect to the selected host
 	list.SetSelectedFunc(func(index int, mainText, secondaryText string, shortcut rune) {
@@ -74,7 +86,7 @@ func main() {
 		}
 	})
 
-	if err := app.SetRoot(list, true).Run(); err != nil {
+	if err := app.SetRoot(flex, true).Run(); err != nil {
 		fmt.Println("Error:", err)
 		os.Exit(1)
 	}
