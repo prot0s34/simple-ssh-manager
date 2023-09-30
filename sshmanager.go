@@ -47,7 +47,7 @@ func main() {
 	// Create a list of hosts for the TUI
 	list := tview.NewList()
 	for _, host := range inventory.Hosts {
-		list.AddItem(host.Name, "", 0, nil)
+		list.AddItem("host:"+host.Name, "user:"+host.Username, 0, nil)
 	}
 
 	// Define the function to connect to the selected host
@@ -63,7 +63,7 @@ func main() {
 		app.Stop()
 
 		// Launch the SSH connection in the default terminal using sshpass
-		cmd := exec.Command("sshpass", "-p", host.Password, "ssh", host.Username+"@"+host.Hostname)
+		cmd := exec.Command("sshpass", "-p", host.Password, "ssh", "-o", "StrictHostKeyChecking no", host.Username+"@"+host.Hostname)
 		cmd.Stdout = os.Stdout
 		cmd.Stdin = os.Stdin
 		cmd.Stderr = os.Stderr
