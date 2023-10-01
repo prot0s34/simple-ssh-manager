@@ -1,5 +1,6 @@
 {
     "hosts": [
+        "inventory_name": "Inventory 1",
         {
             "name": "old-gitlab.domain.local",
             "hostname": "192.168.0.9",
