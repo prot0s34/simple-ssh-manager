@@ -8,7 +8,7 @@ import (
 	"os/exec"
 	"os/user"
 
-	"github.com/gdamore/tcell"
+	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
 
@@ -52,21 +52,52 @@ func main() {
 	}
 	listHostsGroupFirst.SetBorder(true)
 	listHostsGroupFirst.Box.SetBorderAttributes(tcell.RuneBoard).
-		SetTitle("[black:red]S[:yellow]i[:green]m[:darkcyan]l[:blue]e[:darkmagenta]-[:red]S[:yellow]S[:green]H[:darkmagenta]-[:blue]M[:red]a[:darkcyan]n[:yellow]a[:yellow]g[:red]e[:blue]r[white:-]").SetTitleAlign(tview.AlignLeft)
+		SetTitle("[black:red]F[:yellow]i[:green]r[:darkcyan]s[:blue]t[:darkmagenta]-[:red]S[:yellow]S[:green]H[:darkmagenta]-[:blue]H[:red]o[:darkcyan]s[:yellow]t[:yellow]s[:red]![![white:-]").SetTitleAlign(tview.AlignLeft)
 	listHostsGroupFirst.AddItem("", "", 'q', func() {
 		app.Stop()
 	})
 
+	// Second list of hosts for the TUI
+	listHostsGroupSecond := tview.NewList()
+	for _, host := range inventory.Hosts {
+		listHostsGroupSecond.AddItem("name:"+host.Name, "user:"+host.Username+" / hostname:"+host.Hostname, 0, nil)
+	}
+	listHostsGroupSecond.SetBorder(true)
+	listHostsGroupSecond.Box.SetBorderAttributes(tcell.RuneBoard).
+		SetTitle("[black:red]S[:yellow]e[:green]c[:darkcyan]o[:blue]n[:darkmagenta]d[:red]-[:yellow]S[:green]S[:darkmagenta]H[:blue]-[:red]G[:darkcyan]r[:yellow]o[:yellow]u[:red]p[:blue]![white:-]").SetTitleAlign(tview.AlignLeft)
+	listHostsGroupSecond.AddItem("", "", 'q', func() {
+		app.Stop()
+	})
+
+	// Quit-list for the TUI
 	listQuit := tview.NewList()
-	listQuit.SetBorder(true)
 	listQuit.AddItem("Quit", "Press Q to exit", 'q', func() {
 		app.Stop()
 	})
 
 	flex := tview.NewFlex().
-		SetDirection(tview.FlexRow).
 		AddItem(listHostsGroupFirst, 0, 1, true).
-		AddItem(listQuit, 3, 2, false)
+		AddItem(listHostsGroupSecond, 0, 1, true).
+		AddItem(listQuit.SetBorder(true), 10, 1, false)
+
+	app.SetFocus(listHostsGroupFirst)
+	app.SetRoot(flex, true)
+
+	app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		if event.Key() == tcell.KeyLeft {
+			// Switch the focus to the next panel.
+			app.SetFocus(listHostsGroupFirst)
+		}
+		if event.Key() == tcell.KeyRight {
+			// Switch the focus to the next panel.
+			app.SetFocus(listHostsGroupSecond)
+		}
+		return event
+	})
+
+	if err := app.Run(); err != nil {
+		panic(err)
+	}
 
 	// Define the function to connect to the selected host
 	listHostsGroupFirst.SetSelectedFunc(func(index int, mainText, secondaryText string, shortcut rune) {
