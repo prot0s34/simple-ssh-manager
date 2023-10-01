@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"os/user"
+	"strconv"
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
@@ -28,32 +29,14 @@ type Inventory struct {
 
 func main() {
 	// Load the first inventory from the environment variable or default location
-	inventoryPath1 := os.Getenv("SSHMANAGER_INVENTORY1")
-	if inventoryPath1 == "" {
-		usr, err := user.Current()
-		if err != nil {
-			fmt.Println("Error:", err)
-			os.Exit(1)
-		}
-		inventoryPath1 = usr.HomeDir + "/inventory1.json"
-	}
-	inventory1, err := loadInventory(inventoryPath1)
+	inventory1, err := loadInventoryByIndex(1)
 	if err != nil {
 		fmt.Println("Error:", err)
 		os.Exit(1)
 	}
 
-	// Load the second inventory from the environment variable or default location
-	inventoryPath2 := os.Getenv("SSHMANAGER_INVENTORY2")
-	if inventoryPath2 == "" {
-		usr, err := user.Current()
-		if err != nil {
-			fmt.Println("Error:", err)
-			os.Exit(1)
-		}
-		inventoryPath2 = usr.HomeDir + "/inventory2.json"
-	}
-	inventory2, err := loadInventory(inventoryPath2)
+	// Load the second inventory (index 2)
+	inventory2, err := loadInventoryByIndex(2)
 	if err != nil {
 		fmt.Println("Error:", err)
 		os.Exit(1)
@@ -76,52 +59,11 @@ func main() {
 		AddItem(listHostsGroupSecond, 0, 1, true).
 		AddItem(listQuit.SetBorder(true), 10, 1, false)
 
-	// Define the function to connect to the selected host
-	listHostsGroupFirst.SetSelectedFunc(func(index int, mainText, secondaryText string, shortcut rune) {
-		host := inventory1.Hosts[index]
+		// Define the function to connect to the selected host
+	setHostListSelectedFunc(listHostsGroupFirst, inventory1, app)
 
-		if host.Username == "" {
-			fmt.Println("Error: Host username is missing in the inventory.")
-			os.Exit(1)
-		}
-
-		// Close the TUI application
-		app.Stop()
-
-		// Launch the SSH connection in the default terminal using sshpass
-		cmd := exec.Command("sshpass", "-p", host.Password, "ssh", "-o", "StrictHostKeyChecking no", host.Username+"@"+host.Hostname)
-		cmd.Stdout = os.Stdout
-		cmd.Stdin = os.Stdin
-		cmd.Stderr = os.Stderr
-
-		if err := cmd.Run(); err != nil {
-			fmt.Println("Error:", err)
-			os.Exit(1)
-		}
-	})
-
-	listHostsGroupSecond.SetSelectedFunc(func(index int, mainText, secondaryText string, shortcut rune) {
-		host := inventory2.Hosts[index]
-
-		if host.Username == "" {
-			fmt.Println("Error: Host username is missing in the inventory.")
-			os.Exit(1)
-		}
-
-		// Close the TUI application
-		app.Stop()
-
-		// Launch the SSH connection in the default terminal using sshpass
-		cmd := exec.Command("sshpass", "-p", host.Password, "ssh", "-o", "StrictHostKeyChecking no", host.Username+"@"+host.Hostname)
-		cmd.Stdout = os.Stdout
-		cmd.Stdin = os.Stdin
-		cmd.Stderr = os.Stderr
-
-		if err := cmd.Run(); err != nil {
-			fmt.Println("Error:", err)
-			os.Exit(1)
-		}
-	})
+	// Set the selected function for the second list
+	setHostListSelectedFunc(listHostsGroupSecond, inventory2, app)
 
 	app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if event.Key() == tcell.KeyLeft {
@@ -177,9 +119,63 @@ func createHostList(app *tview.Application, inventory *Inventory, inventoryName 
 	list.Box.SetBorderAttributes(tcell.RuneBoard).
 		SetTitle("[black:darkcyan]" + inventoryName + "[white:-]").SetTitleAlign(tview.AlignLeft)
 
-	list.AddItem("", "", 'q', func() {
+	list.AddItem("", "Press 'Q' to Quit, < or > to change hosts list", 'q', func() {
 		app.Stop()
 	})
 
 	return list
+}
+
+func setHostListSelectedFunc(list *tview.List, inventory *Inventory, app *tview.Application) {
+	list.SetSelectedFunc(func(index int, mainText, secondaryText string, shortcut rune) {
+		host := inventory.Hosts[index]
+
+		if host.Username == "" {
+			fmt.Println("Error: Host username is missing in the inventory.")
+			os.Exit(1)
+		}
+
+		// Close the TUI application
+		app.Stop()
+
+		// Launch the SSH connection in the default terminal using sshpass
+		cmd := exec.Command("sshpass", "-p", host.Password, "ssh", "-o", "StrictHostKeyChecking no", host.Username+"@"+host.Hostname)
+		cmd.Stdout = os.Stdout
+		cmd.Stdin = os.Stdin
+		cmd.Stderr = os.Stderr
+
+		if err := cmd.Run(); err != nil {
+			fmt.Println("Error:", err)
+			os.Exit(1)
+		}
+	})
+}
+
+func loadInventoryByIndex(index int) (*Inventory, error) {
+	// Define a map to store inventory paths
+	inventoryPaths := map[int]string{
+		1: os.Getenv("SSHMANAGER_INVENTORY" + strconv.Itoa(index)),
+		2: os.Getenv("SSHMANAGER_INVENTORY2" + strconv.Itoa(index)),
+	}
+
+	// Determine the inventory path based on the index
+	inventoryPath, found := inventoryPaths[index]
+	if !found {
+		return nil, fmt.Errorf("Invalid index")
+	}
+
+	if inventoryPath == "" {
+		usr, err := user.Current()
+		if err != nil {
+			return nil, err
+		}
+		inventoryPath = usr.HomeDir + "/inventory" + strconv.Itoa(index) + ".json"
+	}
+
+	inventory, err := loadInventory(inventoryPath)
+	if err != nil {
+		return nil, err
+	}
+
+	return inventory, nil
 }
