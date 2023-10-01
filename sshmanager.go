@@ -54,21 +54,12 @@ func main() {
 	listHostsGroupFirst := createHostList(app, inventory1, inventory1.InventoryName)
 	listHostsGroupSecond := createHostList(app, inventory2, inventory2.InventoryName)
 
-	// Quit-list for the TUI
-	listQuit := tview.NewList()
-	listQuit.AddItem("Quit", "Press Q to exit", 'q', func() {
-		app.Stop()
-	})
-
 	flex := tview.NewFlex().
 		AddItem(listHostsGroupFirst, 0, 1, true).
-		AddItem(listHostsGroupSecond, 0, 1, true).
-		AddItem(listQuit.SetBorder(true), 10, 1, false)
+		AddItem(listHostsGroupSecond, 0, 1, true)
 
-		// Define the function to connect to the selected host
+	// Define the function to connect to the selected host
 	setHostListSelectedFunc(listHostsGroupFirst, inventory1, app)
-
-	// Set the selected function for the second list
 	setHostListSelectedFunc(listHostsGroupSecond, inventory2, app)
 
 	app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
@@ -123,7 +114,7 @@ func createHostList(app *tview.Application, inventory *Inventory, inventoryName 
 	}
 
 	// Add the custom TextView as the last item in the list
-	list.AddItem("", "Press 'Q' to Quit, < or > to change hosts list", 'q', func() {
+	list.AddItem("", "'Q' to Quit, < or > to change host list, 'Enter' to connect", 'q', func() {
 		app.Stop()
 	})
 
@@ -159,7 +150,7 @@ func loadInventoryByIndex(index int) (*Inventory, error) {
 	// Define a map to store inventory paths
 	inventoryPaths := map[int]string{
 		1: os.Getenv("SSHMANAGER_INVENTORY" + strconv.Itoa(index)),
-		2: os.Getenv("SSHMANAGER_INVENTORY2" + strconv.Itoa(index)),
+		2: os.Getenv("SSHMANAGER_INVENTORY" + strconv.Itoa(index)),
 	}
 
 	// Determine the inventory path based on the index
