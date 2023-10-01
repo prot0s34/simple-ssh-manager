@@ -22,7 +22,8 @@ type Host struct {
 
 // Inventory represents the list of hosts.
 type Inventory struct {
-	Hosts []Host `json:"hosts"`
+	InventoryName string `json:"inventory_name"`
+	Hosts         []Host `json:"hosts"`
 }
 
 func main() {
@@ -61,28 +62,8 @@ func main() {
 	app := tview.NewApplication()
 
 	// Create a list of hosts for the TUI
-	listHostsGroupFirst := tview.NewList()
-	for _, host := range inventory1.Hosts {
-		listHostsGroupFirst.AddItem("name:"+host.Name, "user:"+host.Username+" / hostname:"+host.Hostname, 0, nil)
-	}
-	listHostsGroupFirst.SetBorder(true)
-	listHostsGroupFirst.Box.SetBorderAttributes(tcell.RuneBoard).
-		SetTitle("[black:darkcyan]First-Host-Group[white:-]").SetTitleAlign(tview.AlignLeft)
-	listHostsGroupFirst.AddItem("", "", 'q', func() {
-		app.Stop()
-	})
-
-	// Second list of hosts for the TUI
-	listHostsGroupSecond := tview.NewList()
-	for _, host := range inventory2.Hosts {
-		listHostsGroupSecond.AddItem("name:"+host.Name, "user:"+host.Username+" / hostname:"+host.Hostname, 0, nil)
-	}
-	listHostsGroupSecond.SetBorder(true)
-	listHostsGroupSecond.Box.SetBorderAttributes(tcell.RuneBoard).
-		SetTitle("[black:red]Second-Host-Group[white:-]").SetTitleAlign(tview.AlignLeft)
-	listHostsGroupSecond.AddItem("", "", 'q', func() {
-		app.Stop()
-	})
+	listHostsGroupFirst := createHostList(app, inventory1, inventory1.InventoryName)
+	listHostsGroupSecond := createHostList(app, inventory2, inventory2.InventoryName)
 
 	// Quit-list for the TUI
 	listQuit := tview.NewList()
@@ -182,4 +163,23 @@ func loadInventory(inventoryPath string) (*Inventory, error) {
 	}
 
 	return &inventory, nil
+}
+
+func createHostList(app *tview.Application, inventory *Inventory, inventoryName string) *tview.List {
+	list := tview.NewList()
+	list.SetTitle("[black:darkcyan]" + inventoryName + "[white:-]").SetTitleAlign(tview.AlignLeft)
+
+	for _, host := range inventory.Hosts {
+		list.AddItem("name:"+host.Name, "user:"+host.Username+" / hostname:"+host.Hostname, 0, nil)
+	}
+
+	list.SetBorder(true)
+	list.Box.SetBorderAttributes(tcell.RuneBoard).
+		SetTitle("[black:darkcyan]" + inventoryName + "[white:-]").SetTitleAlign(tview.AlignLeft)
+
+	list.AddItem("", "", 'q', func() {
+		app.Stop()
+	})
+
+	return list
 }
