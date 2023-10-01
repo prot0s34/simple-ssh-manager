@@ -28,6 +28,12 @@ type Inventory struct {
 }
 
 func main() {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("Recovered from panic:", r)
+		}
+	}()
+
 	// Load the first inventory from the environment variable or default location
 	inventory1, err := loadInventoryByIndex(1)
 	if err != nil {
@@ -109,16 +115,14 @@ func loadInventory(inventoryPath string) (*Inventory, error) {
 
 func createHostList(app *tview.Application, inventory *Inventory, inventoryName string) *tview.List {
 	list := tview.NewList()
-	list.SetTitle("[black:darkcyan]" + inventoryName + "[white:-]").SetTitleAlign(tview.AlignLeft)
 
 	for _, host := range inventory.Hosts {
-		list.AddItem("name:"+host.Name, "user:"+host.Username+" / hostname:"+host.Hostname, 0, nil)
+		list.AddItem("name:"+host.Name, "user:"+host.Username+" / hostname:"+host.Hostname, 0, nil).SetBorder(true)
+		list.SetTitle("[black:darkcyan]" + inventoryName + "[white:-]").SetTitleAlign(tview.AlignLeft)
+		list.Box.SetBorderAttributes(tcell.RuneBoard)
 	}
 
-	list.SetBorder(true)
-	list.Box.SetBorderAttributes(tcell.RuneBoard).
-		SetTitle("[black:darkcyan]" + inventoryName + "[white:-]").SetTitleAlign(tview.AlignLeft)
-
+	// Add the custom TextView as the last item in the list
 	list.AddItem("", "Press 'Q' to Quit, < or > to change hosts list", 'q', func() {
 		app.Stop()
 	})
