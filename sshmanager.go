@@ -26,18 +26,33 @@ type Inventory struct {
 }
 
 func main() {
-	// Load the inventory from the environment variable or default location
-	inventoryPath := os.Getenv("SSHMANAGER_INVENTORY")
-	if inventoryPath == "" {
+	// Load the first inventory from the environment variable or default location
+	inventoryPath1 := os.Getenv("SSHMANAGER_INVENTORY1")
+	if inventoryPath1 == "" {
 		usr, err := user.Current()
 		if err != nil {
 			fmt.Println("Error:", err)
 			os.Exit(1)
 		}
-		inventoryPath = usr.HomeDir + "/inventory.json"
+		inventoryPath1 = usr.HomeDir + "/inventory1.json"
+	}
+	inventory1, err := loadInventory(inventoryPath1)
+	if err != nil {
+		fmt.Println("Error:", err)
+		os.Exit(1)
 	}
 
-	inventory, err := loadInventory(inventoryPath)
+	// Load the second inventory from the environment variable or default location
+	inventoryPath2 := os.Getenv("SSHMANAGER_INVENTORY2")
+	if inventoryPath2 == "" {
+		usr, err := user.Current()
+		if err != nil {
+			fmt.Println("Error:", err)
+			os.Exit(1)
+		}
+		inventoryPath2 = usr.HomeDir + "/inventory2.json"
+	}
+	inventory2, err := loadInventory(inventoryPath2)
 	if err != nil {
 		fmt.Println("Error:", err)
 		os.Exit(1)
@@ -47,24 +62,24 @@ func main() {
 
 	// Create a list of hosts for the TUI
 	listHostsGroupFirst := tview.NewList()
-	for _, host := range inventory.Hosts {
+	for _, host := range inventory1.Hosts {
 		listHostsGroupFirst.AddItem("name:"+host.Name, "user:"+host.Username+" / hostname:"+host.Hostname, 0, nil)
 	}
 	listHostsGroupFirst.SetBorder(true)
 	listHostsGroupFirst.Box.SetBorderAttributes(tcell.RuneBoard).
-		SetTitle("[black:red]F[:yellow]i[:green]r[:darkcyan]s[:blue]t[:darkmagenta]-[:red]S[:yellow]S[:green]H[:darkmagenta]-[:blue]H[:red]o[:darkcyan]s[:yellow]t[:yellow]s[:red]![![white:-]").SetTitleAlign(tview.AlignLeft)
+		SetTitle("[black:darkcyan]First-Host-Group[white:-]").SetTitleAlign(tview.AlignLeft)
 	listHostsGroupFirst.AddItem("", "", 'q', func() {
 		app.Stop()
 	})
 
 	// Second list of hosts for the TUI
 	listHostsGroupSecond := tview.NewList()
-	for _, host := range inventory.Hosts {
+	for _, host := range inventory2.Hosts {
 		listHostsGroupSecond.AddItem("name:"+host.Name, "user:"+host.Username+" / hostname:"+host.Hostname, 0, nil)
 	}
 	listHostsGroupSecond.SetBorder(true)
 	listHostsGroupSecond.Box.SetBorderAttributes(tcell.RuneBoard).
-		SetTitle("[black:red]S[:yellow]e[:green]c[:darkcyan]o[:blue]n[:darkmagenta]d[:red]-[:yellow]S[:green]S[:darkmagenta]H[:blue]-[:red]G[:darkcyan]r[:yellow]o[:yellow]u[:red]p[:blue]![white:-]").SetTitleAlign(tview.AlignLeft)
+		SetTitle("[black:red]Second-Host-Group[white:-]").SetTitleAlign(tview.AlignLeft)
 	listHostsGroupSecond.AddItem("", "", 'q', func() {
 		app.Stop()
 	})
@@ -80,28 +95,9 @@ func main() {
 		AddItem(listHostsGroupSecond, 0, 1, true).
 		AddItem(listQuit.SetBorder(true), 10, 1, false)
 
-	app.SetFocus(listHostsGroupFirst)
-	app.SetRoot(flex, true)
-
-	app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		if event.Key() == tcell.KeyLeft {
-			// Switch the focus to the next panel.
-			app.SetFocus(listHostsGroupFirst)
-		}
-		if event.Key() == tcell.KeyRight {
-			// Switch the focus to the next panel.
-			app.SetFocus(listHostsGroupSecond)
-		}
-		return event
-	})
-
-	if err := app.Run(); err != nil {
-		panic(err)
-	}
-
 	// Define the function to connect to the selected host
 	listHostsGroupFirst.SetSelectedFunc(func(index int, mainText, secondaryText string, shortcut rune) {
-		host := inventory.Hosts[index]
+		host := inventory1.Hosts[index]
 
 		if host.Username == "" {
 			fmt.Println("Error: Host username is missing in the inventory.")
@@ -123,10 +119,46 @@ func main() {
 		}
 	})
 
+	listHostsGroupSecond.SetSelectedFunc(func(index int, mainText, secondaryText string, shortcut rune) {
+		host := inventory2.Hosts[index]
+
+		if host.Username == "" {
+			fmt.Println("Error: Host username is missing in the inventory.")
+			os.Exit(1)
+		}
+
+		// Close the TUI application
+		app.Stop()
+
+		// Launch the SSH connection in the default terminal using sshpass
+		cmd := exec.Command("sshpass", "-p", host.Password, "ssh", "-o", "StrictHostKeyChecking no", host.Username+"@"+host.Hostname)
+		cmd.Stdout = os.Stdout
+		cmd.Stdin = os.Stdin
+		cmd.Stderr = os.Stderr
+
+		if err := cmd.Run(); err != nil {
+			fmt.Println("Error:", err)
+			os.Exit(1)
+		}
+	})
+
+	app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		if event.Key() == tcell.KeyLeft {
+			// Switch the focus to the next panel.
+			app.SetFocus(listHostsGroupFirst)
+		}
+		if event.Key() == tcell.KeyRight {
+			// Switch the focus to the next panel.
+			app.SetFocus(listHostsGroupSecond)
+		}
+		return event
+	})
+
 	if err := app.SetRoot(flex, true).Run(); err != nil {
 		fmt.Println("Error:", err)
 		os.Exit(1)
 	}
+
 }
 
 // loadInventory loads the inventory from the specified JSON file.
