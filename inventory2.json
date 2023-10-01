@@ -1,0 +1,10 @@
+{
+    "hosts": [
+        {
+            "name": "old-gitlab.domain.local",
+            "hostname": "192.168.0.9",
+            "username": "root",
+            "password": "password"
+        }
+    ]
+}
