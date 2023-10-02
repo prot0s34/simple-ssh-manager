@@ -10,3 +10,4 @@ inventory:
 TODO:
 - jumphost functional
 - exclude "legend" information to bottom panel
+- use tmux inside of app window instead of current behavior (close app->exec ssh in default terminal)
