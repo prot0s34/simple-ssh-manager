@@ -20,7 +20,9 @@ type Host struct {
 }
 
 type Inventory struct {
+	InventoryName1  string `json:"inventory_name1"`
 	InventoryGroup1 []Host `json:"inventory_group1"`
+	InventoryName2  string `json:"inventory_name2"`
 	InventoryGroup2 []Host `json:"inventory_group2"`
 }
 
@@ -39,8 +41,8 @@ func main() {
 
 	app := tview.NewApplication()
 
-	listHostsGroupFirst := createHostList(app, inventory.InventoryGroup1, "inventory_group1")
-	listHostsGroupSecond := createHostList(app, inventory.InventoryGroup2, "inventory_group2")
+	listHostsGroupFirst := createHostList(app, inventory.InventoryGroup1, inventory.InventoryName1)
+	listHostsGroupSecond := createHostList(app, inventory.InventoryGroup2, inventory.InventoryName2)
 
 	flex := tview.NewFlex().
 		AddItem(listHostsGroupFirst, 0, 1, true).
