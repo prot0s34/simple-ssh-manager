@@ -1,7 +1,7 @@
 {
 
     "inventory_group1_test": [
-  
+    "inventory_name1": "Group 1",  
     {
         "name": "test_host",
         "hostname": "1.2.3.4",
@@ -12,7 +12,7 @@
     ],
   
     "inventory_group2_prod": [
-  
+    "inventory_name2": "Group 2",  
     {
         "name": "prod_host",
         "hostname": "5.6.7.8",
