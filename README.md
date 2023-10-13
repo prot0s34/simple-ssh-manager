@@ -5,7 +5,7 @@ simple ssh manager
 inventory:
 - support two host blocks in single inventory file for each (left-right) panels
 - inventory should be in /home/$user/inventory.json
-- or define in ENV SSHMANAGER_INVENTORY1=pathtoinventory.json
+- or define in ENV SSHMANAGER_INVENTORY=pathtoinventory.json
 
 TODO - Features:
 - jumphost functional
