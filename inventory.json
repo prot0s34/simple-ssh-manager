@@ -1,0 +1,25 @@
+{
+
+    "inventory_group1_test": [
+  
+    {
+        "name": "test_host",
+        "hostname": "1.2.3.4",
+        "username": "root",
+        "password": "pass123"
+    }
+  
+    ],
+  
+    "inventory_group2_prod": [
+  
+    {
+        "name": "prod_host",
+        "hostname": "5.6.7.8",
+        "username": "srv_user",
+        "password": "pass567"
+    }
+  
+    ]
+  
+  }
