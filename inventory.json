@@ -1,25 +1,28 @@
 {
-
-    "inventory_name1": "Group 1",  
+    "inventory_name1": "Group 1",
     "inventory_group1": [
-    {
-        "name": "test_host",
-        "hostname": "1.2.3.4",
-        "username": "root",
-        "password": "pass123"
-    }
-  
+        {
+            "name": "test_host",
+            "hostname": "192.168.0.9",
+            "username": "root",
+            "password": "password",
+            "jumpHost": "kube",
+            "jumpHostConfig": {
+                "kubeconfigPath": "/home/nik/.kube/config_local",
+                "podName": "",
+                "Namespace": "default",
+                "PodNameTemplate": "zsh-"
+            }
+        }
     ],
-  
-    "inventory_name2": "Group 2",  
+    "inventory_name2": "Group 2",
     "inventory_group2": [
-    {
-        "name": "prod_host",
-        "hostname": "5.6.7.8",
-        "username": "srv_user",
-        "password": "pass567"
-    }
-  
+        {
+            "name": "prod_host",
+            "hostname": "192.168.0.10",
+            "username": "root",
+            "password": "password",
+            "jumpHost": "none"
+        }
     ]
-  
-  }
+}
