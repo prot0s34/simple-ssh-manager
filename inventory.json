@@ -7,7 +7,7 @@
             "username": "root",
             "password": "password",
             "jumpHost": "kube",
-            "jumpHostConfig": {
+            "kubeJumpHostConfig": {
                 "kubeconfigPath": "/home/nik/.kube/config_local",
                 "podName": "",
                 "Namespace": "default",
