@@ -1,22 +1,35 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"os/user"
+	"strings"
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/clientcmd"
 )
 
 type Host struct {
-	Name     string `json:"name"`
-	Hostname string `json:"hostname"`
-	Username string `json:"username,omitempty"`
-	Password string `json:"password"`
+	Name           string `json:"name"`
+	Hostname       string `json:"hostname"`
+	Username       string `json:"username,omitempty"`
+	Password       string `json:"password"`
+	JumpHost       string `json:"jumpHost,omitempty"`
+	JumpHostConfig struct {
+		KubeconfigPath  string `json:"kubeconfigPath,omitempty"`
+		PodName         string `json:"podName,omitempty"`
+		Namespace       string `json:"namespace,omitempty"`
+		PodNameTemplate string `json:"podNameTemplate,omitempty"`
+	} `json:"jumpHostConfig,omitempty"`
 }
 
 type Inventory struct {
@@ -25,6 +38,8 @@ type Inventory struct {
 	InventoryName2  string `json:"inventory_name2"`
 	InventoryGroup2 []Host `json:"inventory_group2"`
 }
+
+var inModalDialog = false
 
 func main() {
 	defer func() {
@@ -48,26 +63,69 @@ func main() {
 		AddItem(listHostsGroupFirst, 0, 1, true).
 		AddItem(listHostsGroupSecond, 0, 1, true)
 
-	setHostListSelectedFunc(listHostsGroupFirst, inventory.InventoryGroup1, app)
-	setHostListSelectedFunc(listHostsGroupSecond, inventory.InventoryGroup2, app)
-
-	app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		if event.Key() == tcell.KeyLeft {
-
-			app.SetFocus(listHostsGroupFirst)
-		}
-		if event.Key() == tcell.KeyRight {
-
-			app.SetFocus(listHostsGroupSecond)
-		}
-		return event
-	})
+	setHostListSelectedFunc(listHostsGroupFirst, inventory.InventoryGroup1, app, listHostsGroupFirst, listHostsGroupSecond)
+	setHostListSelectedFunc(listHostsGroupSecond, inventory.InventoryGroup2, app, listHostsGroupFirst, listHostsGroupSecond)
+	navigateBetweenFlexLists(app, listHostsGroupFirst, listHostsGroupSecond)
 
 	if err := app.SetRoot(flex, true).Run(); err != nil {
 		fmt.Println("Error:", err)
 		os.Exit(1)
 	}
 
+}
+
+func initKubernetesClient(kubeconfigPath string) (*kubernetes.Clientset, error) {
+	config, err := clientcmd.BuildConfigFromFlags("", kubeconfigPath)
+	if err != nil {
+		return nil, err
+	}
+
+	clientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		return nil, err
+	}
+
+	return clientset, nil
+}
+
+func findPodByKeyword(clientset *kubernetes.Clientset, namespace, keyword string) (string, error) {
+	pods, err := clientset.CoreV1().Pods(namespace).List(context.TODO(), metav1.ListOptions{
+		//		LabelSelector: "your-label-selector", // add functinal to match label selector if defined
+	})
+	if err != nil {
+		return "", err
+	}
+
+	for _, pod := range pods.Items {
+		if strings.Contains(pod.Name, keyword) {
+			return pod.Name, nil
+		}
+	}
+
+	// If no matching pod was found, return an error
+	return "", fmt.Errorf("Pod not found with keyword: %s", keyword)
+}
+
+func navigateBetweenFlexLists(app *tview.Application, list1, list2 *tview.List) {
+	app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		if inModalDialog {
+			return event
+		}
+
+		inactiveColor := tcell.ColorBlack
+		activeColor := tcell.ColorBlue
+
+		if event.Key() == tcell.KeyLeft {
+			app.SetFocus(list1)
+			list1.SetBorderColor(activeColor).SetBorderAttributes(tcell.AttrBold)
+			list2.SetBorderColor(inactiveColor)
+		} else if event.Key() == tcell.KeyRight {
+			app.SetFocus(list2)
+			list1.SetBorderColor(inactiveColor)
+			list2.SetBorderColor(activeColor).SetBorderAttributes(tcell.AttrBold)
+		}
+		return event
+	})
 }
 
 func loadInventory() (*Inventory, error) {
@@ -122,7 +180,7 @@ func createHostList(app *tview.Application, hosts []Host, inventoryName string) 
 	return list
 }
 
-func setHostListSelectedFunc(list *tview.List, hosts []Host, app *tview.Application) {
+func setHostListSelectedFunc(list *tview.List, hosts []Host, app *tview.Application, listHostsGroupFirst, listHostsGroupSecond *tview.List) {
 	list.SetSelectedFunc(func(index int, mainText, secondaryText string, shortcut rune) {
 		host := hosts[index]
 
@@ -131,16 +189,68 @@ func setHostListSelectedFunc(list *tview.List, hosts []Host, app *tview.Applicat
 			os.Exit(1)
 		}
 
-		app.Stop()
+		inModalDialog = true
 
-		cmd := exec.Command("sshpass", "-p", host.Password, "ssh", "-o", "StrictHostKeyChecking no", host.Username+"@"+host.Hostname)
-		cmd.Stdout = os.Stdout
-		cmd.Stdin = os.Stdin
-		cmd.Stderr = os.Stderr
+		dialog := tview.NewModal().
+			SetText("Choose a jump option for host:" + host.Name).
+			AddButtons([]string{"None", "Kube", "Cancel"}).
+			SetDoneFunc(func(buttonIndex int, buttonLabel string) {
+				inModalDialog = false
+				switch buttonIndex {
+				case 0: // None
+					app.Stop()
+					cmd := exec.Command("sshpass", "-p", host.Password, "ssh", "-o", "StrictHostKeyChecking no", "-t", host.Username+"@"+host.Hostname)
+					cmd.Stdout = os.Stdout
+					cmd.Stdin = os.Stdin
+					cmd.Stderr = os.Stderr
 
-		if err := cmd.Run(); err != nil {
-			fmt.Println("Error:", err)
-			os.Exit(1)
-		}
+					if err := cmd.Run(); err != nil {
+						fmt.Println("Error:", err)
+						os.Exit(1)
+					}
+
+				case 1: // Kube
+					if host.JumpHostConfig.KubeconfigPath == "" {
+						fmt.Println("Error: KubeconfigPath is missing in the inventory.")
+						os.Exit(1)
+					}
+
+					clientset, err := initKubernetesClient(host.JumpHostConfig.KubeconfigPath)
+					if err != nil {
+						fmt.Println("Error initializing Kubernetes client:", err)
+						os.Exit(1)
+					}
+
+					if host.JumpHostConfig.PodName == "" {
+						podName, err := findPodByKeyword(clientset, host.JumpHostConfig.Namespace, host.JumpHostConfig.PodNameTemplate)
+						if err != nil {
+							fmt.Println("Error:", err)
+							os.Exit(1)
+						}
+						host.JumpHostConfig.PodName = podName
+					}
+
+					app.Stop()
+					cmd := exec.Command("kubectl", "--kubeconfig", host.JumpHostConfig.KubeconfigPath, "exec", "-it", host.JumpHostConfig.PodName, "--", "sshpass", "-p", host.Password, "ssh", "-o", "StrictHostKeyChecking no", "-t", host.Username+"@"+host.Hostname)
+
+					cmd.Stdout = os.Stdout
+					cmd.Stdin = os.Stdin
+					cmd.Stderr = os.Stderr
+
+					if err := cmd.Run(); err != nil {
+						fmt.Println("Error:", err)
+						os.Exit(1)
+					}
+
+				case 2: // Cancel
+					app.SetRoot(tview.NewFlex().
+						AddItem(listHostsGroupFirst, 0, 1, true).
+						AddItem(listHostsGroupSecond, 0, 1, true), true)
+				}
+				inModalDialog = false
+			})
+
+		app.SetRoot(dialog, true)
+		navigateBetweenFlexLists(app, listHostsGroupFirst, listHostsGroupSecond)
 	})
 }
