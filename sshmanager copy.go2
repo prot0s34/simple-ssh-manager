@@ -185,11 +185,10 @@ func navigateBetweenFlexLists(app *tview.Application, inventoryIndex *int, inven
 			updateHostList(app, listHostsGroupNext, previousGroup.Hosts, previousGroup.Name)
 
 			// Set focus to the current list
-			app.SetFocus(listHostsGroupNext)
-			listHostsGroupNext.SetBorderColor(activeColor).SetBorderAttributes(tcell.AttrBold)
-			listHostsGroupCurrent.SetBorderColor(inactiveColor)
+			app.SetFocus(listHostsGroupCurrent)
+			listHostsGroupCurrent.SetBorderColor(activeColor).SetBorderAttributes(tcell.AttrBold)
+			listHostsGroupNext.SetBorderColor(inactiveColor)
 		}
-
 		return event
 	})
 }
