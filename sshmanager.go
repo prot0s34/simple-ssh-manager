@@ -46,6 +46,7 @@ type InventoryGroup struct {
 
 var inModalDialog = false
 var inventoryIndex = 0
+var listHostsGroup *tview.List
 
 func main() {
 	defer func() {
@@ -65,7 +66,8 @@ func main() {
 
 	listHostsGroup := createHostList(app, inventoryGroups[inventoryIndex].Hosts, inventoryGroups[inventoryIndex].Name)
 
-	setHostListSelectedFunc(listHostsGroup, inventoryGroups[inventoryIndex].Hosts, app, inventoryGroups)
+	setHostListSelectedFunc(listHostsGroup, inventoryGroups[inventoryIndex].Hosts, app, inventoryGroups, listHostsGroup)
+
 	navigateBetweenInventoryGroups(app, &inventoryIndex, inventoryGroups, listHostsGroup)
 
 	if err := app.SetRoot(listHostsGroup, true).Run(); err != nil {
@@ -139,25 +141,6 @@ func findPodByKeyword(clientset *kubernetes.Clientset, namespace, keyword string
 	return "", fmt.Errorf("Pod not found with keyword: %s", keyword)
 }
 
-func navigateBetweenInventoryGroups(app *tview.Application, inventoryIndex *int, inventoryGroups []InventoryGroup, listHostsGroup *tview.List) {
-	app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		if inModalDialog {
-			return event
-		}
-
-		if event.Key() == tcell.KeyLeft {
-			*inventoryIndex = (*inventoryIndex + 1) % len(inventoryGroups)
-			listHostsGroup.Clear()
-			updateHostList(app, listHostsGroup, inventoryGroups[*inventoryIndex].Hosts, inventoryGroups[*inventoryIndex].Name)
-		} else if event.Key() == tcell.KeyRight {
-			*inventoryIndex = (*inventoryIndex - 1 + len(inventoryGroups)) % len(inventoryGroups)
-			listHostsGroup.Clear()
-			updateHostList(app, listHostsGroup, inventoryGroups[*inventoryIndex].Hosts, inventoryGroups[*inventoryIndex].Name)
-		}
-		return event
-	})
-}
-
 func updateHostList(app *tview.Application, list *tview.List, hosts []Host, inventoryName string) {
 	for _, host := range hosts {
 		list.AddItem("name:"+host.Name, "user:"+host.Username+" / hostname:"+host.Hostname, 0, nil).SetBorder(true)
@@ -185,7 +168,7 @@ func createHostList(app *tview.Application, hosts []Host, inventoryName string) 
 	return list
 }
 
-func setHostListSelectedFunc(list *tview.List, hosts []Host, app *tview.Application, inventoryGroups []InventoryGroup) {
+func setHostListSelectedFunc(list *tview.List, hosts []Host, app *tview.Application, inventoryGroups []InventoryGroup, listHostsGroup *tview.List) {
 	list.SetSelectedFunc(func(index int, mainText, secondaryText string, shortcut rune) {
 		host := hosts[index]
 
@@ -249,10 +232,31 @@ func setHostListSelectedFunc(list *tview.List, hosts []Host, app *tview.Applicat
 
 				case 2: // Cancel
 					inModalDialog = false
+					app.SetRoot(listHostsGroup, true)
 				}
 			})
 
 		app.SetRoot(dialog, true)
-		navigateBetweenInventoryGroups(app, &inventoryIndex, inventoryGroups, list)
+		navigateBetweenInventoryGroups(app, &inventoryIndex, inventoryGroups, listHostsGroup)
+	})
+}
+
+func navigateBetweenInventoryGroups(app *tview.Application, inventoryIndex *int, inventoryGroups []InventoryGroup, listHostsGroup *tview.List) {
+	app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		if inModalDialog {
+			return event
+		}
+
+		if event.Key() == tcell.KeyLeft {
+			*inventoryIndex = (*inventoryIndex - 1 + len(inventoryGroups)) % len(inventoryGroups) // Decrement to go left
+			listHostsGroup.Clear()
+			updateHostList(app, listHostsGroup, inventoryGroups[*inventoryIndex].Hosts, inventoryGroups[*inventoryIndex].Name)
+		} else if event.Key() == tcell.KeyRight {
+			*inventoryIndex = (*inventoryIndex + 1) % len(inventoryGroups) // Increment to go right
+			listHostsGroup.Clear()
+			updateHostList(app, listHostsGroup, inventoryGroups[*inventoryIndex].Hosts, inventoryGroups[*inventoryIndex].Name)
+		}
+
+		return event
 	})
 }
