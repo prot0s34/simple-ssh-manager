@@ -157,6 +157,7 @@ func navigateBetweenFlexLists(app *tview.Application, inventoryIndex *int, inven
 
 		if event.Key() == tcell.KeyLeft {
 			// Update the inventory index
+
 			*inventoryIndex = (*inventoryIndex + 1) % len(inventoryGroups)
 
 			// Update the content of the two panes with the current and next group's hosts
