@@ -1,4 +1,4 @@
-### ssm
+# ssm
 simple ssh manager
 ![Example](ssh-manager.gif)
 
