@@ -63,22 +63,15 @@ func main() {
 	}
 	inventoryIndex = 0
 
-	listHostsGroupCurrent := createHostList(app, inventoryGroups[inventoryIndex].Hosts, inventoryGroups[inventoryIndex].Name)
-	listHostsGroupNext := createHostList(app, inventoryGroups[(inventoryIndex+1)%len(inventoryGroups)].Hosts, inventoryGroups[(inventoryIndex+1)%len(inventoryGroups)].Name)
+	listHostsGroup := createHostList(app, inventoryGroups[inventoryIndex].Hosts, inventoryGroups[inventoryIndex].Name)
 
-	flex := tview.NewFlex().
-		AddItem(listHostsGroupCurrent, 0, 1, true).
-		AddItem(listHostsGroupNext, 0, 1, true)
+	setHostListSelectedFunc(listHostsGroup, inventoryGroups[inventoryIndex].Hosts, app, inventoryGroups)
+	navigateBetweenInventoryGroups(app, &inventoryIndex, inventoryGroups, listHostsGroup)
 
-	setHostListSelectedFunc(listHostsGroupCurrent, inventoryGroups[inventoryIndex].Hosts, app, listHostsGroupCurrent, listHostsGroupNext, inventoryGroups)
-	setHostListSelectedFunc(listHostsGroupNext, inventoryGroups[(inventoryIndex+1)%len(inventoryGroups)].Hosts, app, listHostsGroupCurrent, listHostsGroupNext, inventoryGroups)
-	navigateBetweenFlexLists(app, &inventoryIndex, inventoryGroups, listHostsGroupCurrent, listHostsGroupNext)
-
-	if err := app.SetRoot(flex, true).Run(); err != nil {
+	if err := app.SetRoot(listHostsGroup, true).Run(); err != nil {
 		fmt.Println("Error:", err)
 		os.Exit(1)
 	}
-
 }
 
 func loadInventoryGroups() ([]InventoryGroup, error) {
@@ -146,50 +139,21 @@ func findPodByKeyword(clientset *kubernetes.Clientset, namespace, keyword string
 	return "", fmt.Errorf("Pod not found with keyword: %s", keyword)
 }
 
-func navigateBetweenFlexLists(app *tview.Application, inventoryIndex *int, inventoryGroups []InventoryGroup, listHostsGroupCurrent, listHostsGroupNext *tview.List) {
+func navigateBetweenInventoryGroups(app *tview.Application, inventoryIndex *int, inventoryGroups []InventoryGroup, listHostsGroup *tview.List) {
 	app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if inModalDialog {
 			return event
 		}
 
-		activeColor := tcell.ColorBlue
-		inactiveColor := tcell.ColorBlack
-
 		if event.Key() == tcell.KeyLeft {
-			// Update the inventory index
 			*inventoryIndex = (*inventoryIndex + 1) % len(inventoryGroups)
-
-			// Update the content of the two panes with the current and next group's hosts
-			listHostsGroupCurrent.Clear()
-			listHostsGroupNext.Clear()
-			currentGroup := inventoryGroups[*inventoryIndex]
-			nextGroup := inventoryGroups[(*inventoryIndex+1)%len(inventoryGroups)]
-			updateHostList(app, listHostsGroupCurrent, currentGroup.Hosts, currentGroup.Name)
-			updateHostList(app, listHostsGroupNext, nextGroup.Hosts, nextGroup.Name)
-
-			// Set focus to the current list
-			app.SetFocus(listHostsGroupCurrent)
-			listHostsGroupCurrent.SetBorderColor(activeColor).SetBorderAttributes(tcell.AttrBold)
-			listHostsGroupNext.SetBorderColor(inactiveColor)
-
+			listHostsGroup.Clear()
+			updateHostList(app, listHostsGroup, inventoryGroups[*inventoryIndex].Hosts, inventoryGroups[*inventoryIndex].Name)
 		} else if event.Key() == tcell.KeyRight {
-			// Update the inventory index to go to the previous group
 			*inventoryIndex = (*inventoryIndex - 1 + len(inventoryGroups)) % len(inventoryGroups)
-
-			// Update the content of the two panes with the current and previous group's hosts
-			listHostsGroupCurrent.Clear()
-			listHostsGroupNext.Clear()
-			currentGroup := inventoryGroups[*inventoryIndex]
-			previousGroup := inventoryGroups[(*inventoryIndex-1+len(inventoryGroups))%len(inventoryGroups)]
-			updateHostList(app, listHostsGroupCurrent, currentGroup.Hosts, currentGroup.Name)
-			updateHostList(app, listHostsGroupNext, previousGroup.Hosts, previousGroup.Name)
-
-			// Set focus to the current list
-			app.SetFocus(listHostsGroupNext)
-			listHostsGroupNext.SetBorderColor(activeColor).SetBorderAttributes(tcell.AttrBold)
-			listHostsGroupCurrent.SetBorderColor(inactiveColor)
+			listHostsGroup.Clear()
+			updateHostList(app, listHostsGroup, inventoryGroups[*inventoryIndex].Hosts, inventoryGroups[*inventoryIndex].Name)
 		}
-
 		return event
 	})
 }
@@ -221,7 +185,7 @@ func createHostList(app *tview.Application, hosts []Host, inventoryName string) 
 	return list
 }
 
-func setHostListSelectedFunc(list *tview.List, hosts []Host, app *tview.Application, listHostsGroupCurrent, listHostsGroupNext *tview.List, inventoryGroups []InventoryGroup) {
+func setHostListSelectedFunc(list *tview.List, hosts []Host, app *tview.Application, inventoryGroups []InventoryGroup) {
 	list.SetSelectedFunc(func(index int, mainText, secondaryText string, shortcut rune) {
 		host := hosts[index]
 
@@ -233,7 +197,7 @@ func setHostListSelectedFunc(list *tview.List, hosts []Host, app *tview.Applicat
 		inModalDialog = true
 
 		dialog := tview.NewModal().
-			SetText("Choose a jump option for host:" + host.Name).
+			SetText("Choose a jump option for host: " + host.Name).
 			AddButtons([]string{"None", "Kube", "Cancel"}).
 			SetDoneFunc(func(buttonIndex int, buttonLabel string) {
 				inModalDialog = false
@@ -284,14 +248,11 @@ func setHostListSelectedFunc(list *tview.List, hosts []Host, app *tview.Applicat
 					}
 
 				case 2: // Cancel
-					app.SetRoot(tview.NewFlex().
-						AddItem(listHostsGroupCurrent, 0, 1, true).
-						AddItem(listHostsGroupNext, 0, 1, true), true)
+					inModalDialog = false
 				}
-				inModalDialog = false
 			})
 
 		app.SetRoot(dialog, true)
-		navigateBetweenFlexLists(app, &inventoryIndex, inventoryGroups, listHostsGroupCurrent, listHostsGroupNext)
+		navigateBetweenInventoryGroups(app, &inventoryIndex, inventoryGroups, list)
 	})
 }
