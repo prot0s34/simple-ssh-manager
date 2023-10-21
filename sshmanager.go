@@ -19,17 +19,17 @@ import (
 )
 
 type Host struct {
-	Name           string `json:"name"`
-	Hostname       string `json:"hostname"`
-	Username       string `json:"username,omitempty"`
-	Password       string `json:"password"`
-	JumpHost       string `json:"jumpHost,omitempty"`
-	JumpHostConfig struct {
+	Name               string `json:"name"`
+	Hostname           string `json:"hostname"`
+	Username           string `json:"username,omitempty"`
+	Password           string `json:"password"`
+	JumpHost           string `json:"jumpHost,omitempty"`
+	KubeJumpHostConfig struct {
 		KubeconfigPath  string `json:"kubeconfigPath,omitempty"`
 		PodName         string `json:"podName,omitempty"`
 		Namespace       string `json:"namespace,omitempty"`
 		PodNameTemplate string `json:"podNameTemplate,omitempty"`
-	} `json:"jumpHostConfig,omitempty"`
+	} `json:"kubeJumpHostConfig,omitempty"`
 }
 
 type Inventory struct {
@@ -210,28 +210,28 @@ func setHostListSelectedFunc(list *tview.List, hosts []Host, app *tview.Applicat
 					}
 
 				case 1: // Kube
-					if host.JumpHostConfig.KubeconfigPath == "" {
+					if host.KubeJumpHostConfig.KubeconfigPath == "" {
 						fmt.Println("Error: KubeconfigPath is missing in the inventory.")
 						os.Exit(1)
 					}
 
-					clientset, err := initKubernetesClient(host.JumpHostConfig.KubeconfigPath)
+					clientset, err := initKubernetesClient(host.KubeJumpHostConfig.KubeconfigPath)
 					if err != nil {
 						fmt.Println("Error initializing Kubernetes client:", err)
 						os.Exit(1)
 					}
 
-					if host.JumpHostConfig.PodName == "" {
-						podName, err := findPodByKeyword(clientset, host.JumpHostConfig.Namespace, host.JumpHostConfig.PodNameTemplate)
+					if host.KubeJumpHostConfig.PodName == "" {
+						podName, err := findPodByKeyword(clientset, host.KubeJumpHostConfig.Namespace, host.KubeJumpHostConfig.PodNameTemplate)
 						if err != nil {
 							fmt.Println("Error:", err)
 							os.Exit(1)
 						}
-						host.JumpHostConfig.PodName = podName
+						host.KubeJumpHostConfig.PodName = podName
 					}
 
 					app.Stop()
-					cmd := exec.Command("kubectl", "--kubeconfig", host.JumpHostConfig.KubeconfigPath, "exec", "-it", host.JumpHostConfig.PodName, "--", "sshpass", "-p", host.Password, "ssh", "-o", "StrictHostKeyChecking no", "-t", host.Username+"@"+host.Hostname)
+					cmd := exec.Command("kubectl", "--kubeconfig", host.KubeJumpHostConfig.KubeconfigPath, "exec", "-it", host.KubeJumpHostConfig.PodName, "--", "sshpass", "-p", host.Password, "ssh", "-o", "StrictHostKeyChecking no", "-t", host.Username+"@"+host.Hostname)
 
 					cmd.Stdout = os.Stdout
 					cmd.Stdin = os.Stdin
