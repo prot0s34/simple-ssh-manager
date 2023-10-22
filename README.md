@@ -51,6 +51,8 @@ chmod +x /usr/local/bin/sshmanager
 - [ ] use crypto/ssh for connection instead of exec ssh
 - [ ] refac exec ssh commands (use ssh config file instead of command line args?)
 - [ ] ssh command builder?
+- [ ] make release?
+- [ ] make CI/Actions?
 
 ### TO FIX:
 - "Recovered from panic: runtime error: index out of range [n] with length n" after quit app with 'q'
