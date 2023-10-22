@@ -167,7 +167,7 @@ func setHostListSelectedFunc(list *tview.List, hosts []Host, app *tview.Applicat
 
 		dialog := tview.NewModal().
 			SetText("Choose a jump option for host: " + host.Name).
-			AddButtons([]string{"None", "Kube", "Kube+Jump", "Cancel"}).
+			AddButtons([]string{"None", "Kube❯Jump", "Kube", "Cancel"}).
 			SetDoneFunc(func(buttonIndex int, buttonLabel string) {
 				inModalDialog = false
 				switch buttonIndex {
@@ -183,40 +183,7 @@ func setHostListSelectedFunc(list *tview.List, hosts []Host, app *tview.Applicat
 						os.Exit(1)
 					}
 
-				case 1: // Kube
-					if inventoryGroups[inventoryIndex].KubeJumpHostConfig.KubeconfigPath == "" {
-						fmt.Println("Error: KubeconfigPath is missing in the inventory.")
-						os.Exit(1)
-					}
-
-					clientset, err := initKubernetesClient(inventoryGroups[inventoryIndex].KubeJumpHostConfig.KubeconfigPath)
-					if err != nil {
-						fmt.Println("Error initializing Kubernetes client:", err)
-						os.Exit(1)
-					}
-
-					if inventoryGroups[inventoryIndex].KubeJumpHostConfig.PodName == "" {
-						podName, err := findPodByKeyword(clientset, inventoryGroups[inventoryIndex].KubeJumpHostConfig.Namespace, inventoryGroups[inventoryIndex].KubeJumpHostConfig.PodNameTemplate)
-						if err != nil {
-							fmt.Println("Error:", err)
-							os.Exit(1)
-						}
-						inventoryGroups[inventoryIndex].KubeJumpHostConfig.PodName = podName
-					}
-
-					app.Stop()
-					cmd := exec.Command("kubectl", "--kubeconfig", inventoryGroups[inventoryIndex].KubeJumpHostConfig.KubeconfigPath, "exec", "-it", inventoryGroups[inventoryIndex].KubeJumpHostConfig.PodName, "--", "sshpass", "-p", host.Password, "ssh", "-o", "StrictHostKeyChecking no", "-t", host.Username+"@"+host.Hostname)
-
-					cmd.Stdout = os.Stdout
-					cmd.Stdin = os.Stdin
-					cmd.Stderr = os.Stderr
-
-					if err := cmd.Run(); err != nil {
-						fmt.Println("Error:", err)
-						os.Exit(1)
-					}
-
-				case 2: // Kube + JumpHost
+				case 1: // Kube + Jump
 					if inventoryGroups[inventoryIndex].KubeJumpHostConfig.KubeconfigPath == "" {
 						fmt.Println("Error: KubeconfigPath is missing in the inventory.")
 						os.Exit(1)
@@ -249,6 +216,40 @@ func setHostListSelectedFunc(list *tview.List, hosts []Host, app *tview.Applicat
 						fmt.Println("Error:", err)
 						os.Exit(1)
 					}
+
+				case 2: // Kube
+					if inventoryGroups[inventoryIndex].KubeJumpHostConfig.KubeconfigPath == "" {
+						fmt.Println("Error: KubeconfigPath is missing in the inventory.")
+						os.Exit(1)
+					}
+
+					clientset, err := initKubernetesClient(inventoryGroups[inventoryIndex].KubeJumpHostConfig.KubeconfigPath)
+					if err != nil {
+						fmt.Println("Error initializing Kubernetes client:", err)
+						os.Exit(1)
+					}
+
+					if inventoryGroups[inventoryIndex].KubeJumpHostConfig.PodName == "" {
+						podName, err := findPodByKeyword(clientset, inventoryGroups[inventoryIndex].KubeJumpHostConfig.Namespace, inventoryGroups[inventoryIndex].KubeJumpHostConfig.PodNameTemplate)
+						if err != nil {
+							fmt.Println("Error:", err)
+							os.Exit(1)
+						}
+						inventoryGroups[inventoryIndex].KubeJumpHostConfig.PodName = podName
+					}
+
+					app.Stop()
+					cmd := exec.Command("kubectl", "--kubeconfig", inventoryGroups[inventoryIndex].KubeJumpHostConfig.KubeconfigPath, "exec", "-it", inventoryGroups[inventoryIndex].KubeJumpHostConfig.PodName, "--", "sshpass", "-p", host.Password, "ssh", "-o", "StrictHostKeyChecking no", "-t", host.Username+"@"+host.Hostname)
+
+					cmd.Stdout = os.Stdout
+					cmd.Stdin = os.Stdin
+					cmd.Stderr = os.Stderr
+
+					if err := cmd.Run(); err != nil {
+						fmt.Println("Error:", err)
+						os.Exit(1)
+					}
+
 				case 3: // Cancel
 					inModalDialog = false
 					app.SetRoot(listHostsGroup, true)
