@@ -23,7 +23,6 @@ type Host struct {
 	Hostname           string `json:"hostname"`
 	Username           string `json:"username,omitempty"`
 	Password           string `json:"password"`
-	JumpHost           string `json:"jumpHost,omitempty"`
 	KubeJumpHostConfig struct {
 		KubeconfigPath  string `json:"kubeconfigPath,omitempty"`
 		PodName         string `json:"podName,omitempty"`
@@ -32,21 +31,24 @@ type Host struct {
 	} `json:"kubeJumpHostConfig,omitempty"`
 }
 
-type Inventory struct {
-	InventoryName1  string `json:"inventory_name1"`
-	InventoryGroup1 []Host `json:"inventory_group1"`
-	InventoryName2  string `json:"inventory_name2"`
-	InventoryGroup2 []Host `json:"inventory_group2"`
-}
-
 type InventoryGroup struct {
-	Name  string `json:"name"`
+	Name           string `json:"name"`
+	JumpHostConfig struct {
+		Hostname string `json:"hostname,omitempty"`
+		Username string `json:"username,omitempty"`
+		Password string `json:"password,omitempty"`
+	}
+	KubeJumpHostConfig struct {
+		KubeconfigPath  string `json:"kubeconfigPath,omitempty"`
+		PodName         string `json:"podName,omitempty"`
+		Namespace       string `json:"namespace,omitempty"`
+		PodNameTemplate string `json:"podNameTemplate,omitempty"`
+	}
 	Hosts []Host `json:"hosts"`
 }
 
 var inModalDialog = false
 var inventoryIndex = 0
-var listHostsGroup *tview.List
 
 func main() {
 	defer func() {
@@ -100,15 +102,6 @@ func loadInventoryGroups() ([]InventoryGroup, error) {
 	return inventoryGroups, nil
 }
 
-func updateFlexLayout(app *tview.Application, currentList, nextList, previousList *tview.List) {
-	flex := tview.NewFlex().
-		AddItem(previousList, 0, 1, true).
-		AddItem(currentList, 0, 1, true).
-		AddItem(nextList, 0, 1, true)
-
-	app.SetRoot(flex, true)
-}
-
 func initKubernetesClient(kubeconfigPath string) (*kubernetes.Clientset, error) {
 	config, err := clientcmd.BuildConfigFromFlags("", kubeconfigPath)
 	if err != nil {
@@ -137,7 +130,6 @@ func findPodByKeyword(clientset *kubernetes.Clientset, namespace, keyword string
 		}
 	}
 
-	// If no matching pod was found, return an error
 	return "", fmt.Errorf("Pod not found with keyword: %s", keyword)
 }
 
@@ -181,7 +173,7 @@ func setHostListSelectedFunc(list *tview.List, hosts []Host, app *tview.Applicat
 
 		dialog := tview.NewModal().
 			SetText("Choose a jump option for host: " + host.Name).
-			AddButtons([]string{"None", "Kube", "Cancel"}).
+			AddButtons([]string{"None", "Kube", "Kube+Jump", "Cancel"}).
 			SetDoneFunc(func(buttonIndex int, buttonLabel string) {
 				inModalDialog = false
 				switch buttonIndex {
@@ -230,7 +222,40 @@ func setHostListSelectedFunc(list *tview.List, hosts []Host, app *tview.Applicat
 						os.Exit(1)
 					}
 
-				case 2: // Cancel
+				case 2: // Kube + JumpHost
+					if host.KubeJumpHostConfig.KubeconfigPath == "" {
+						fmt.Println("Error: KubeconfigPath is missing in the inventory.")
+						os.Exit(1)
+					}
+
+					clientset, err := initKubernetesClient(host.KubeJumpHostConfig.KubeconfigPath)
+					if err != nil {
+						fmt.Println("Error initializing Kubernetes client:", err)
+						os.Exit(1)
+					}
+
+					if host.KubeJumpHostConfig.PodName == "" {
+						podName, err := findPodByKeyword(clientset, host.KubeJumpHostConfig.Namespace, host.KubeJumpHostConfig.PodNameTemplate)
+						if err != nil {
+							fmt.Println("Error:", err)
+							os.Exit(1)
+						}
+						host.KubeJumpHostConfig.PodName = podName
+					}
+
+					app.Stop()
+
+					cmd := exec.Command("kubectl", "--kubeconfig", host.KubeJumpHostConfig.KubeconfigPath, "exec", "-it", host.KubeJumpHostConfig.PodName, "--", "sshpass", "-p", inventoryGroups[inventoryIndex].JumpHostConfig.Password, "ssh", "-o", "StrictHostKeyChecking no", "-t", inventoryGroups[inventoryIndex].JumpHostConfig.Username+"@"+inventoryGroups[inventoryIndex].JumpHostConfig.Hostname, "sshpass", "-p", host.Password, "ssh", "-o", "'StrictHostKeyChecking no'", host.Username+"@"+host.Hostname)
+
+					cmd.Stdout = os.Stdout
+					cmd.Stdin = os.Stdin
+					cmd.Stderr = os.Stderr
+
+					if err := cmd.Run(); err != nil {
+						fmt.Println("Error:", err)
+						os.Exit(1)
+					}
+				case 3: // Cancel
 					inModalDialog = false
 					app.SetRoot(listHostsGroup, true)
 				}
@@ -248,11 +273,11 @@ func navigateBetweenInventoryGroups(app *tview.Application, inventoryIndex *int,
 		}
 
 		if event.Key() == tcell.KeyLeft {
-			*inventoryIndex = (*inventoryIndex - 1 + len(inventoryGroups)) % len(inventoryGroups) // Decrement to go left
+			*inventoryIndex = (*inventoryIndex - 1 + len(inventoryGroups)) % len(inventoryGroups)
 			listHostsGroup.Clear()
 			updateHostList(app, listHostsGroup, inventoryGroups[*inventoryIndex].Hosts, inventoryGroups[*inventoryIndex].Name)
 		} else if event.Key() == tcell.KeyRight {
-			*inventoryIndex = (*inventoryIndex + 1) % len(inventoryGroups) // Increment to go right
+			*inventoryIndex = (*inventoryIndex + 1) % len(inventoryGroups)
 			listHostsGroup.Clear()
 			updateHostList(app, listHostsGroup, inventoryGroups[*inventoryIndex].Hosts, inventoryGroups[*inventoryIndex].Name)
 		}

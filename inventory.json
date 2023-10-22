@@ -1,13 +1,17 @@
 [
     {
-        "name": "Group 1",
+        "name": "Inventory_local",
+        "JumpHostConfig": {
+            "hostname": "192.168.0.8",
+            "username": "root",
+            "password": "password"
+        },
         "hosts": [
             {
                 "name": "test_host",
                 "hostname": "192.168.0.9",
                 "username": "root",
                 "password": "password",
-                "jumpHost": "kube",
                 "kubeJumpHostConfig": {
                     "kubeconfigPath": "/home/nik/.kube/config_local",
                     "podName": "",
@@ -18,19 +22,34 @@
         ]
     },
     {
-        "name": "Group 2",
+        "name": "Group 2 test",
+        "JumpHostConfig": {
+            "hostname": "192.168.0.7",
+            "username": "root",
+            "password": "password"
+        },
         "hosts": [
             {
-                "name": "prod_host",
-                "hostname": "192.168.0.10",
+                "name": "test_host",
+                "hostname": "192.168.0.9",
                 "username": "root",
                 "password": "password",
-                "jumpHost": "none"
+                "kubeJumpHostConfig": {
+                    "kubeconfigPath": "/home/nik/.kube/config_local",
+                    "podName": "",
+                    "namespace": "default",
+                    "podNameTemplate": "zsh-"
+                }
             }
         ]
     },
     {
         "name": "Group 3",
+        "JumpHostConfig": {
+            "hostname": "192.168.0.8",
+            "username": "root",
+            "password": "password"
+        },
         "hosts": [
             {
                 "name": "prod_host3",
@@ -43,6 +62,11 @@
     },
     {
         "name": "Group 4",
+        "JumpHostConfig": {
+            "hostname": "192.168.0.8",
+            "username": "root",
+            "password": "password"
+        },
         "hosts": [
             {
                 "name": "prod_host4",
