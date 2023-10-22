@@ -1,3 +1,4 @@
 # Ignore IntelliJ IDEA files
 .idea/
 .vscode/
+sshmanager
