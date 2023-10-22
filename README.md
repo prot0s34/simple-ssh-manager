@@ -1,4 +1,4 @@
-# ssm
+### ssm version with double-pane flex layout and dynamic inventory navigation
 simple ssh manager
 ![Example](ssh-manager.gif)
 
