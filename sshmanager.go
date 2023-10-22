@@ -166,8 +166,8 @@ func setHostListSelectedFunc(list *tview.List, hosts []Host, app *tview.Applicat
 		inModalDialog = true
 
 		dialog := tview.NewModal().
-			SetText("Choose a jump option for host: " + host.Name).
-			AddButtons([]string{"None", "Kube❯Jump", "Kube", "Cancel"}).
+			SetText("Choose a jumphost option for host: " + host.Name).
+			AddButtons([]string{"None", "Kube❯Jump", "Kube", "Jump", "Cancel"}).
 			SetDoneFunc(func(buttonIndex int, buttonLabel string) {
 				inModalDialog = false
 				switch buttonIndex {
@@ -250,7 +250,19 @@ func setHostListSelectedFunc(list *tview.List, hosts []Host, app *tview.Applicat
 						os.Exit(1)
 					}
 
-				case 3: // Cancel
+				case 3: // Jump
+					app.Stop()
+					cmd := exec.Command("sshpass", "-p", inventoryGroups[inventoryIndex].JumpHostConfig.Password, "ssh", "-o", "StrictHostKeyChecking no", "-t", inventoryGroups[inventoryIndex].JumpHostConfig.Username+"@"+inventoryGroups[inventoryIndex].JumpHostConfig.Hostname, "sshpass", "-p", host.Password, "ssh", "-o", "'StrictHostKeyChecking no'", "-t", host.Username+"@"+host.Hostname)
+					cmd.Stdout = os.Stdout
+					cmd.Stdin = os.Stdin
+					cmd.Stderr = os.Stderr
+
+					if err := cmd.Run(); err != nil {
+						fmt.Println("Error:", err)
+						os.Exit(1)
+					}
+
+				case 4: // Cancel
 					inModalDialog = false
 					app.SetRoot(listHostsGroup, true)
 				}
