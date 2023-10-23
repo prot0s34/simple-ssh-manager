@@ -53,10 +53,12 @@ chmod +x /usr/local/bin/sshmanager
 - [ ] ssh command builder?
 - [ ] make release?
 - [ ] make CI/Actions?
+- [ ] refac Hosts struct and optimize struct pass and use
 
 ### TO FIX:
 - "Recovered from panic: runtime error: index out of range [n] with length n" after quit app with 'q'
 
 ### Changelog:
-- 2023.10.21: added kubernetes jumphost support and modal dialog for jump options, fixed minor bugs
+- 2023.10.23 fix bug with selecting host for connect (affect lists that different from first list)
 - 2023.10.22: added nested (kubernetes->jumphost) jump option, add regular jumphost option, back to single-list draw with ability to switch between lists, allow multiply lists in one inventory file, add separate jump configs per host, and so on (minor changes)
+- 2023.10.21: added kubernetes jumphost support and modal dialog for jump options, fixed minor bugs

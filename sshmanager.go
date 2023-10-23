@@ -156,7 +156,7 @@ func createHostList(app *tview.Application, hosts []Host, inventoryName string) 
 
 func setHostListSelectedFunc(list *tview.List, hosts []Host, app *tview.Application, inventoryGroups []InventoryGroup, listHostsGroup *tview.List) {
 	list.SetSelectedFunc(func(index int, mainText, secondaryText string, shortcut rune) {
-		host := hosts[index]
+		host := inventoryGroups[inventoryIndex].Hosts[index]
 
 		if host.Username == "" {
 			fmt.Println("Error: Host username is missing in the inventory.")
@@ -206,7 +206,7 @@ func setHostListSelectedFunc(list *tview.List, hosts []Host, app *tview.Applicat
 
 					app.Stop()
 
-					cmd := exec.Command("kubectl", "--kubeconfig", inventoryGroups[inventoryIndex].KubeJumpHostConfig.KubeconfigPath, "exec", "-it", inventoryGroups[inventoryIndex].KubeJumpHostConfig.PodName, "--", "sshpass", "-p", inventoryGroups[inventoryIndex].JumpHostConfig.Password, "ssh", "-o", "StrictHostKeyChecking no", "-t", inventoryGroups[inventoryIndex].JumpHostConfig.Username+"@"+inventoryGroups[inventoryIndex].JumpHostConfig.Hostname, "sshpass", "-p", host.Password, "ssh", "-o", "'StrictHostKeyChecking no'", host.Username+"@"+host.Hostname)
+					cmd := exec.Command("kubectl", "--kubeconfig", inventoryGroups[inventoryIndex].KubeJumpHostConfig.KubeconfigPath, "exec", "-it", inventoryGroups[inventoryIndex].KubeJumpHostConfig.PodName, "--", "sshpass", "-p", inventoryGroups[inventoryIndex].JumpHostConfig.Password, "ssh", "-o", "StrictHostKeyChecking no", "-t", inventoryGroups[inventoryIndex].JumpHostConfig.Username+"@"+inventoryGroups[inventoryIndex].JumpHostConfig.Hostname, "sshpass", "-p", "'"+host.Password+"'", "ssh", "-o", "'StrictHostKeyChecking no'", host.Username+"@"+host.Hostname)
 
 					cmd.Stdout = os.Stdout
 					cmd.Stdin = os.Stdin
