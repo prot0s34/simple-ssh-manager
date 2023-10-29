@@ -4,7 +4,7 @@
     <img src="ssh-manager.gif" alt="Example">
 </p>
 
-Lightweight ssh manager, support several jumphost options and multiply host list group.
+Lightweight ssh connections manager, support several jumphost options and multiply groups hosts list.
 Written in Go with tview and kubernetes libraries.
 
 ### Inventory:
