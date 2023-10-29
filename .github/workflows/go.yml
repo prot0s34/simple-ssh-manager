@@ -31,7 +31,9 @@ jobs:
       uses: actions/upload-artifact@v3.1.3
       with:
         name: binary
-        path: ./sshmanager
+        path: |
+          ./sshmanager
+          !./sshmanager/ssh-manager.gif
 
   release:
     runs-on: ubuntu-latest
