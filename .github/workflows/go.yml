@@ -45,7 +45,7 @@ jobs:
           path: sshmanager
 
       - name: Run ls
-        run: ls -lhrt /home/runner/work/simple-ssh-manager/simple-ssh-manager/sshmanager
+        run: ls -lhrt ./sshmanager
 
       - name: Create Release
         id: create_release
