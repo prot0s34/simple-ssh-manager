@@ -32,7 +32,7 @@ jobs:
       with:
         name: binary
         path: |
-          sshmanager
+          artifacts
 
   release:
     runs-on: ubuntu-latest
@@ -42,16 +42,16 @@ jobs:
         uses: actions/download-artifact@v2
         with:
           name: binary
-          path: sshmanager
+          path: artifacts
 
       - name: Run ls
-        run: ls -lhrt ./sshmanager
+        run: ls -lhrt ./artifacts
 
       - name: Create Release
         id: create_release
         uses: softprops/action-gh-release@v1
         with:
-          files: /home/runner/work/simple-ssh-manager/simple-ssh-manager/sshmanager
+          files: ./artifacts/sshmanager
 
 permissions:
   contents: write
