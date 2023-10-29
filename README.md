@@ -53,7 +53,7 @@ chmod +x /usr/local/bin/sshmanager
 - [ ] ssh command builder?
 - [x] make release?
 - [x] make CI/Actions?
-- [ ] add binary release to CI/Actions
+- [x] add binary release to CI/Actions
 - [ ] add tagging at pull requests to CI/Actions
 - [ ] refac Hosts struct and optimize struct pass and use
 - [ ] add echo "connected to $hostname" on each jumphost on the way to target host
