@@ -22,7 +22,7 @@ jobs:
         go-version: '1.20'
 
     - name: Build
-      run: go build -v ./...
+      run: go build sshmanager.go
 
     - name: Test
       run: go test -v ./...
@@ -33,7 +33,6 @@ jobs:
         name: binary
         path: |
           ./sshmanager
-          !./sshmanager/ssh-manager.gif
 
   release:
     runs-on: ubuntu-latest
