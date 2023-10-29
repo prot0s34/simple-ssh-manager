@@ -32,3 +32,19 @@ jobs:
       with:
         name: binary
         path: ./sshmanager
+
+  release:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Download Build Artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: binary
+          path: ./sshmanager
+
+      - name: Create Release
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: ./sshmanager
