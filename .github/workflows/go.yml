@@ -48,7 +48,7 @@ jobs:
         id: create_release
         uses: softprops/action-gh-release@v1
         with:
-          files: sshmanager
+          files: /home/runner/work/simple-ssh-manager/simple-ssh-manager/sshmanager
 
 permissions:
   contents: write
