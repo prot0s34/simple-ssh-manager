@@ -54,6 +54,7 @@ chmod +x /usr/local/bin/sshmanager
 - [ ] make release?
 - [ ] make CI/Actions?
 - [ ] refac Hosts struct and optimize struct pass and use
+- [ ] add echo "connected to $hostname" on each jumphost on the way to target host
 
 ### TO FIX:
 - "Recovered from panic: runtime error: index out of range [n] with length n" after quit app with 'q'
