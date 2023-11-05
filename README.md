@@ -57,6 +57,7 @@ chmod +x /usr/local/bin/sshmanager
 - [ ] add tagging at pull requests to CI/Actions
 - [ ] refac Hosts struct and optimize struct pass and use
 - [ ] add echo "connected to $hostname" on each jumphost on the way to target host
+- [ ] add 'no strict host checking' for kube+jump option
 
 ### TO FIX:
 - "Recovered from panic: runtime error: index out of range [n] with length n" after quit app with 'q'
