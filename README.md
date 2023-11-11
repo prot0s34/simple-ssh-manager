@@ -1,6 +1,7 @@
 # simple ssh manager 💻
 
 ![example workflow](https://github.com/prot0s34/simple-ssh-manager/actions/workflows/on_commit.yml/badge.svg/)
+![GitHub tag (with filter)](https://img.shields.io/github/v/tag/prot0s34/simple-ssh-manager)
 
 Lightweight ssh connections manager, support several jumphost options and multiply groups hosts list.
 Written in Go with tview and kubernetes libraries.
