@@ -63,6 +63,7 @@ chmod +x /usr/local/bin/sshmanager
 - [ ] refac Hosts struct and optimize struct pass and use
 - [ ] add echo "connected to $hostname" on each jumphost on the way to target host
 - [ ] add 'no strict host checking' for kube+jump option
+- [ ] add "kubectl run debug --rm -i --tty \ --image=... \ --overrides='{"spec": { "nodeSelector": {"kubernetes.io/hostname": "some-node"}}}' -- bash" option?
 
 ### TO FIX:
 - "Recovered from panic: runtime error: index out of range [n] with length n" after quit app with 'q'
