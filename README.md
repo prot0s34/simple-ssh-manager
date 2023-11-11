@@ -8,7 +8,7 @@ Written in Go with tview and kubernetes libraries.
 
 ### Preview:
 <p align="left">
-    <img src="ssh-manager.gif" alt="Example">
+    <img src="preview.gif" alt="Example">
 </p>
 
 
