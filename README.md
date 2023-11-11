@@ -1,11 +1,15 @@
 # simple ssh manager 💻
 
+![example workflow](https://github.com/prot0s34/simple-ssh-manager/actions/workflows/on_commit.yml/badge.svg/)
+
+Lightweight ssh connections manager, support several jumphost options and multiply groups hosts list.
+Written in Go with tview and kubernetes libraries.
+
+### Preview:
 <p align="left">
     <img src="ssh-manager.gif" alt="Example">
 </p>
 
-Lightweight ssh connections manager, support several jumphost options and multiply groups hosts list.
-Written in Go with tview and kubernetes libraries.
 
 ### Inventory:
 - support multiply lists in one inventory file
@@ -32,7 +36,7 @@ Written in Go with tview and kubernetes libraries.
 
 ### How-To Use:
 ```
-go build sshmanager.go
+go build -o ./sshmanager .
 cp sshmanager /usr/local/bin/
 chmod +x /usr/local/bin/sshmanager
 ```
