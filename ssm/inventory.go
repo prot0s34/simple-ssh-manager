@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"os"
 	"os/user"
 )
@@ -18,7 +17,7 @@ func loadInventoryGroups() ([]InventoryGroup, error) {
 		inventoryPath = usr.HomeDir + "/inventory.json"
 	}
 
-	file, err := ioutil.ReadFile(inventoryPath)
+	file, err := os.ReadFile(inventoryPath)
 	if err != nil {
 		return nil, err
 	}
