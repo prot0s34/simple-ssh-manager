@@ -3,8 +3,8 @@
 ![example workflow](https://github.com/prot0s34/simple-ssh-manager/actions/workflows/on_commit.yml/badge.svg/)
 ![GitHub tag (with filter)](https://img.shields.io/github/v/tag/prot0s34/simple-ssh-manager)
 
-Lightweight ssh connections manager, support several jumphost options and multiply groups hosts list.
-Written in Go with tview and kubernetes libraries.
+Lightweight SSH connections manager, support several jumphost options and multiply host-groups.
+Written in Go with [tview](https://github.com/rivo/tview) and [kubernetes/client-go](https://github.com/kubernetes/client-go).
 
 ### Preview:
 <p align="left">
@@ -19,14 +19,14 @@ Written in Go with tview and kubernetes libraries.
 - regular host, kubernetes pod or both (kubernetes -> jumphost -> targethost) can be used as jump option
 
 ### Jumphost options:
-- None - localhost -> targethost
-- Kube❯Jump - localhost -> kubernetes pod -> jumphost -> targethost
-- Kube - localhost -> kubernetes pod -> targethost
-- Jump - localhost -> jumphost -> targethost
+- **None** - localhost -> targethost
+- **Kube❯Jump** - localhost -> kubernetes pod -> jumphost -> targethost
+- **Kube** - localhost -> kubernetes pod -> targethost
+- **Jump** - localhost -> jumphost -> targethost
 
 ### Kubernetes pod as jumphost - config:
 - kubeJumpHostConfig.kubeconfigPath - path to kubeconfig file (default: ~/.kube/config)
-- kubeJumpHostConfig.namespace - namespace of pod (default: default)
+- kubeJumpHostConfig.namespace - namespace of pod (used "default" if not defined)
 - kubeJumpHostConfig.podName - name of pod. If podName not defined, podNameTemplate will be used for pod search (for generic pod name)
 - kubeJumpHostConfig.podNameTemplate - template for pod name search
 
