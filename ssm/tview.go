@@ -54,10 +54,7 @@ func setHostListSelectedFunc(list *tview.List, hosts []Host, app *tview.Applicat
 			inventoryGroups[inventoryIndex].KubeJumpHostConfig.Namespace,
 			"exec",
 			"-it",
-			inventoryGroups[inventoryIndex].KubeJumpHostConfig.PodName,
-			"--",
-			"sshpass",
-			"-p"}
+		}
 
 		dialog := tview.NewModal().
 			SetText("Choose a jumphost option for host: " + host.Name).
@@ -67,23 +64,25 @@ func setHostListSelectedFunc(list *tview.List, hosts []Host, app *tview.Applicat
 				switch buttonIndex {
 				case 0: // None
 					app.Stop()
-					args := []string{"sshpass", "-p", host.Password, "ssh", "-o", "StrictHostKeyChecking no", "-t", host.Username + "@" + host.Hostname}
+					args := []string{"sshpass", "-p", host.Password, "ssh", "-o", "StrictHostKeyChecking no", "-t", "-q", host.Username + "@" + host.Hostname}
 					executeCommand(args)
 				case 1: // Kube + Jump
 					app.Stop()
-					if err := initializeKubeJumpHostConfig(inventoryGroups, inventoryIndex); err != nil {
+					podName, err := initializeKubeJumpHostConfig(inventoryGroups, inventoryIndex)
+					if err != nil {
 						fmt.Println(err)
 						os.Exit(1)
 					}
-					args := append(kubectlArgs, inventoryGroups[inventoryIndex].JumpHostConfig.Password, "ssh", "-o", "StrictHostKeyChecking no", "-q", "-t", inventoryGroups[inventoryIndex].JumpHostConfig.Username+"@"+inventoryGroups[inventoryIndex].JumpHostConfig.Hostname, "sshpass", "-p", "'"+host.Password+"'", "ssh", "-o", "'StrictHostKeyChecking no'", "-q", host.Username+"@"+host.Hostname)
+					args := append(kubectlArgs, podName, "--", "sshpass", "-p", inventoryGroups[inventoryIndex].JumpHostConfig.Password, "ssh", "-o", "StrictHostKeyChecking no", "-q", "-t", inventoryGroups[inventoryIndex].JumpHostConfig.Username+"@"+inventoryGroups[inventoryIndex].JumpHostConfig.Hostname, "sshpass", "-p", "'"+host.Password+"'", "ssh", "-o", "'StrictHostKeyChecking no'", "-q", host.Username+"@"+host.Hostname)
 					executeCommand(args)
 				case 2: // Kube
 					app.Stop()
-					if err := initializeKubeJumpHostConfig(inventoryGroups, inventoryIndex); err != nil {
+					podName, err := initializeKubeJumpHostConfig(inventoryGroups, inventoryIndex)
+					if err != nil {
 						fmt.Println(err)
 						os.Exit(1)
 					}
-					args := append(kubectlArgs, host.Password, "ssh", "-o", "StrictHostKeyChecking no", "-t", "-q", host.Username+"@"+host.Hostname)
+					args := append(kubectlArgs, podName, "--", "sshpass", "-p", host.Password, "ssh", "-o", "StrictHostKeyChecking no", "-t", "-q", host.Username+"@"+host.Hostname)
 					executeCommand(args)
 				case 3: // Jump
 					app.Stop()
@@ -120,25 +119,26 @@ func navigateBetweenInventoryGroups(app *tview.Application, inventoryIndex *int,
 	})
 }
 
-func initializeKubeJumpHostConfig(inventoryGroups []InventoryGroup, inventoryIndex int) error {
+func initializeKubeJumpHostConfig(inventoryGroups []InventoryGroup, inventoryIndex int) (string, error) {
 	if inventoryGroups[inventoryIndex].KubeJumpHostConfig.KubeconfigPath == "" {
-		return fmt.Errorf("error[initializeKubeJumpHostConfig]: kubeconfigPath is missing in the inventory")
+		return "", fmt.Errorf("error[initializeKubeJumpHostConfig]: KubeconfigPath is missing in the inventory")
 	}
 
 	clientset, err := initKubernetesClient(inventoryGroups[inventoryIndex].KubeJumpHostConfig.KubeconfigPath)
 	if err != nil {
-		return fmt.Errorf("error[initializeKubeJumpHostConfig]: initializing Kubernetes client: %v", err)
+		return "", fmt.Errorf("error[initializeKubeJumpHostConfig]: initializing Kubernetes client: %v", err)
 	}
 
-	if inventoryGroups[inventoryIndex].KubeJumpHostConfig.PodName == "" {
-		podName, err := findPodByKeyword(clientset, inventoryGroups[inventoryIndex].KubeJumpHostConfig.Namespace, inventoryGroups[inventoryIndex].KubeJumpHostConfig.PodNameTemplate)
+	podName := inventoryGroups[inventoryIndex].KubeJumpHostConfig.PodName
+	if podName == "" {
+		podName, err = findPodByKeyword(clientset, inventoryGroups[inventoryIndex].KubeJumpHostConfig.Namespace, inventoryGroups[inventoryIndex].KubeJumpHostConfig.PodNameTemplate)
 		if err != nil {
-			return fmt.Errorf("error[initializeKubeJumpHostConfig]: %v", err)
+			return "", fmt.Errorf("error[initializeKubeJumpHostConfig]: %v", err)
 		}
 		inventoryGroups[inventoryIndex].KubeJumpHostConfig.PodName = podName
 	}
 
-	return nil
+	return podName, nil
 }
 
 func executeCommand(args []string) {
