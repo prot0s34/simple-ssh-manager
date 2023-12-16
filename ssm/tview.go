@@ -142,18 +142,18 @@ func navigateBetweenInventoryGroups(app *tview.Application, inventoryIndex *int,
 
 func initializeKubeJumpHostConfig(inventoryGroups []InventoryGroup, inventoryIndex int) error {
 	if inventoryGroups[inventoryIndex].KubeJumpHostConfig.KubeconfigPath == "" {
-		return fmt.Errorf("Error: KubeconfigPath is missing in the inventory.")
+		return fmt.Errorf("error[initializeKubeJumpHostConfig]: kubeconfigPath is missing in the inventory")
 	}
 
 	clientset, err := initKubernetesClient(inventoryGroups[inventoryIndex].KubeJumpHostConfig.KubeconfigPath)
 	if err != nil {
-		return fmt.Errorf("Error initializing Kubernetes client: %v", err)
+		return fmt.Errorf("error[initializeKubeJumpHostConfig]: initializing Kubernetes client: %v", err)
 	}
 
 	if inventoryGroups[inventoryIndex].KubeJumpHostConfig.PodName == "" {
 		podName, err := findPodByKeyword(clientset, inventoryGroups[inventoryIndex].KubeJumpHostConfig.Namespace, inventoryGroups[inventoryIndex].KubeJumpHostConfig.PodNameTemplate)
 		if err != nil {
-			return fmt.Errorf("Error: %v", err)
+			return fmt.Errorf("error[initializeKubeJumpHostConfig]: %v", err)
 		}
 		inventoryGroups[inventoryIndex].KubeJumpHostConfig.PodName = podName
 	}
