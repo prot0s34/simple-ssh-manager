@@ -38,5 +38,5 @@ func findPodByKeyword(clientset *kubernetes.Clientset, namespace, keyword string
 		}
 	}
 
-	return "", fmt.Errorf("Pod not found with keyword: %s", keyword)
+	return "", fmt.Errorf("pod not found with keyword: %s", keyword)
 }

@@ -55,30 +55,15 @@ func setHostListSelectedFunc(list *tview.List, hosts []Host, app *tview.Applicat
 				switch buttonIndex {
 				case 0: // None
 					app.Stop()
+
 					handleNoneCase(host)
-
 				case 1: // Kube + Jump
-					if inventoryGroups[inventoryIndex].KubeJumpHostConfig.KubeconfigPath == "" {
-						fmt.Println("Error: KubeconfigPath is missing in the inventory.")
-						os.Exit(1)
-					}
-
-					clientset, err := initKubernetesClient(inventoryGroups[inventoryIndex].KubeJumpHostConfig.KubeconfigPath)
-					if err != nil {
-						fmt.Println("Error initializing Kubernetes client:", err)
-						os.Exit(1)
-					}
-
-					if inventoryGroups[inventoryIndex].KubeJumpHostConfig.PodName == "" {
-						podName, err := findPodByKeyword(clientset, inventoryGroups[inventoryIndex].KubeJumpHostConfig.Namespace, inventoryGroups[inventoryIndex].KubeJumpHostConfig.PodNameTemplate)
-						if err != nil {
-							fmt.Println("Error:", err)
-							os.Exit(1)
-						}
-						inventoryGroups[inventoryIndex].KubeJumpHostConfig.PodName = podName
-					}
-
 					app.Stop()
+
+					if err := initializeKubeJumpHostConfig(inventoryGroups, inventoryIndex); err != nil {
+						fmt.Println(err)
+						os.Exit(1)
+					}
 
 					cmd := exec.Command("kubectl", "--kubeconfig", inventoryGroups[inventoryIndex].KubeJumpHostConfig.KubeconfigPath, "-n", inventoryGroups[inventoryIndex].KubeJumpHostConfig.Namespace, "exec", "-it", inventoryGroups[inventoryIndex].KubeJumpHostConfig.PodName, "--", "sshpass", "-p", inventoryGroups[inventoryIndex].JumpHostConfig.Password, "ssh", "-o", "StrictHostKeyChecking no", "-q", "-t", inventoryGroups[inventoryIndex].JumpHostConfig.Username+"@"+inventoryGroups[inventoryIndex].JumpHostConfig.Hostname, "sshpass", "-p", "'"+host.Password+"'", "ssh", "-o", "'StrictHostKeyChecking no'", "-q", host.Username+"@"+host.Hostname)
 
@@ -92,27 +77,13 @@ func setHostListSelectedFunc(list *tview.List, hosts []Host, app *tview.Applicat
 					}
 
 				case 2: // Kube
-					if inventoryGroups[inventoryIndex].KubeJumpHostConfig.KubeconfigPath == "" {
-						fmt.Println("Error: KubeconfigPath is missing in the inventory.")
-						os.Exit(1)
-					}
-
-					clientset, err := initKubernetesClient(inventoryGroups[inventoryIndex].KubeJumpHostConfig.KubeconfigPath)
-					if err != nil {
-						fmt.Println("Error initializing Kubernetes client:", err)
-						os.Exit(1)
-					}
-
-					if inventoryGroups[inventoryIndex].KubeJumpHostConfig.PodName == "" {
-						podName, err := findPodByKeyword(clientset, inventoryGroups[inventoryIndex].KubeJumpHostConfig.Namespace, inventoryGroups[inventoryIndex].KubeJumpHostConfig.PodNameTemplate)
-						if err != nil {
-							fmt.Println("Error:", err)
-							os.Exit(1)
-						}
-						inventoryGroups[inventoryIndex].KubeJumpHostConfig.PodName = podName
-					}
-
 					app.Stop()
+
+					if err := initializeKubeJumpHostConfig(inventoryGroups, inventoryIndex); err != nil {
+						fmt.Println(err)
+						os.Exit(1)
+					}
+
 					cmd := exec.Command("kubectl", "--kubeconfig", inventoryGroups[inventoryIndex].KubeJumpHostConfig.KubeconfigPath, "-n", inventoryGroups[inventoryIndex].KubeJumpHostConfig.Namespace, "exec", "-it", inventoryGroups[inventoryIndex].KubeJumpHostConfig.PodName, "--", "sshpass", "-p", host.Password, "ssh", "-o", "StrictHostKeyChecking no", "-t", "-q", host.Username+"@"+host.Hostname)
 
 					cmd.Stdout = os.Stdout
@@ -126,7 +97,9 @@ func setHostListSelectedFunc(list *tview.List, hosts []Host, app *tview.Applicat
 
 				case 3: // Jump
 					app.Stop()
+
 					cmd := exec.Command("sshpass", "-p", inventoryGroups[inventoryIndex].JumpHostConfig.Password, "ssh", "-o", "StrictHostKeyChecking no", "-t", "-q", inventoryGroups[inventoryIndex].JumpHostConfig.Username+"@"+inventoryGroups[inventoryIndex].JumpHostConfig.Hostname, "sshpass", "-p", host.Password, "ssh", "-o", "'StrictHostKeyChecking no'", "-t", "-q", host.Username+"@"+host.Hostname)
+
 					cmd.Stdout = os.Stdout
 					cmd.Stdin = os.Stdin
 					cmd.Stderr = os.Stderr
@@ -165,6 +138,27 @@ func navigateBetweenInventoryGroups(app *tview.Application, inventoryIndex *int,
 
 		return event
 	})
+}
+
+func initializeKubeJumpHostConfig(inventoryGroups []InventoryGroup, inventoryIndex int) error {
+	if inventoryGroups[inventoryIndex].KubeJumpHostConfig.KubeconfigPath == "" {
+		return fmt.Errorf("Error: KubeconfigPath is missing in the inventory.")
+	}
+
+	clientset, err := initKubernetesClient(inventoryGroups[inventoryIndex].KubeJumpHostConfig.KubeconfigPath)
+	if err != nil {
+		return fmt.Errorf("Error initializing Kubernetes client: %v", err)
+	}
+
+	if inventoryGroups[inventoryIndex].KubeJumpHostConfig.PodName == "" {
+		podName, err := findPodByKeyword(clientset, inventoryGroups[inventoryIndex].KubeJumpHostConfig.Namespace, inventoryGroups[inventoryIndex].KubeJumpHostConfig.PodNameTemplate)
+		if err != nil {
+			return fmt.Errorf("Error: %v", err)
+		}
+		inventoryGroups[inventoryIndex].KubeJumpHostConfig.PodName = podName
+	}
+
+	return nil
 }
 
 func handleNoneCase(host Host) {
