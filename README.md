@@ -8,7 +8,7 @@ Written in Go with [tview](https://github.com/rivo/tview) and [kubernetes/client
 
 ### Preview:
 <p align="left">
-    <img src="preview.gif" alt="Example">
+    <img src="https://github.com/prot0s34/common-repo-stuff/blob/main/sshmanager-preview.gif" alt="Example">
 </p>
 
 
