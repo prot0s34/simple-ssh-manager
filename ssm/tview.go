@@ -55,60 +55,28 @@ func setHostListSelectedFunc(list *tview.List, hosts []Host, app *tview.Applicat
 				switch buttonIndex {
 				case 0: // None
 					app.Stop()
-
-					handleNoneCase(host)
+					args := []string{"sshpass", "-p", host.Password, "ssh", "-o", "StrictHostKeyChecking no", "-t", host.Username + "@" + host.Hostname}
+					executeCommand(args)
 				case 1: // Kube + Jump
 					app.Stop()
-
 					if err := initializeKubeJumpHostConfig(inventoryGroups, inventoryIndex); err != nil {
 						fmt.Println(err)
 						os.Exit(1)
 					}
-
-					cmd := exec.Command("kubectl", "--kubeconfig", inventoryGroups[inventoryIndex].KubeJumpHostConfig.KubeconfigPath, "-n", inventoryGroups[inventoryIndex].KubeJumpHostConfig.Namespace, "exec", "-it", inventoryGroups[inventoryIndex].KubeJumpHostConfig.PodName, "--", "sshpass", "-p", inventoryGroups[inventoryIndex].JumpHostConfig.Password, "ssh", "-o", "StrictHostKeyChecking no", "-q", "-t", inventoryGroups[inventoryIndex].JumpHostConfig.Username+"@"+inventoryGroups[inventoryIndex].JumpHostConfig.Hostname, "sshpass", "-p", "'"+host.Password+"'", "ssh", "-o", "'StrictHostKeyChecking no'", "-q", host.Username+"@"+host.Hostname)
-
-					cmd.Stdout = os.Stdout
-					cmd.Stdin = os.Stdin
-					cmd.Stderr = os.Stderr
-
-					if err := cmd.Run(); err != nil {
-						fmt.Println("Error:", err)
-						os.Exit(1)
-					}
-
+					args := []string{"kubectl", "--kubeconfig", inventoryGroups[inventoryIndex].KubeJumpHostConfig.KubeconfigPath, "-n", inventoryGroups[inventoryIndex].KubeJumpHostConfig.Namespace, "exec", "-it", inventoryGroups[inventoryIndex].KubeJumpHostConfig.PodName, "--", "sshpass", "-p", inventoryGroups[inventoryIndex].JumpHostConfig.Password, "ssh", "-o", "StrictHostKeyChecking no", "-q", "-t", inventoryGroups[inventoryIndex].JumpHostConfig.Username + "@" + inventoryGroups[inventoryIndex].JumpHostConfig.Hostname, "sshpass", "-p", "'" + host.Password + "'", "ssh", "-o", "'StrictHostKeyChecking no'", "-q", host.Username + "@" + host.Hostname}
+					executeCommand(args)
 				case 2: // Kube
 					app.Stop()
-
 					if err := initializeKubeJumpHostConfig(inventoryGroups, inventoryIndex); err != nil {
 						fmt.Println(err)
 						os.Exit(1)
 					}
-
-					cmd := exec.Command("kubectl", "--kubeconfig", inventoryGroups[inventoryIndex].KubeJumpHostConfig.KubeconfigPath, "-n", inventoryGroups[inventoryIndex].KubeJumpHostConfig.Namespace, "exec", "-it", inventoryGroups[inventoryIndex].KubeJumpHostConfig.PodName, "--", "sshpass", "-p", host.Password, "ssh", "-o", "StrictHostKeyChecking no", "-t", "-q", host.Username+"@"+host.Hostname)
-
-					cmd.Stdout = os.Stdout
-					cmd.Stdin = os.Stdin
-					cmd.Stderr = os.Stderr
-
-					if err := cmd.Run(); err != nil {
-						fmt.Println("Error:", err)
-						os.Exit(1)
-					}
-
+					args := []string{"kubectl", "--kubeconfig", inventoryGroups[inventoryIndex].KubeJumpHostConfig.KubeconfigPath, "-n", inventoryGroups[inventoryIndex].KubeJumpHostConfig.Namespace, "exec", "-it", inventoryGroups[inventoryIndex].KubeJumpHostConfig.PodName, "--", "sshpass", "-p", host.Password, "ssh", "-o", "StrictHostKeyChecking no", "-t", "-q", host.Username + "@" + host.Hostname}
+					executeCommand(args)
 				case 3: // Jump
 					app.Stop()
-
-					cmd := exec.Command("sshpass", "-p", inventoryGroups[inventoryIndex].JumpHostConfig.Password, "ssh", "-o", "StrictHostKeyChecking no", "-t", "-q", inventoryGroups[inventoryIndex].JumpHostConfig.Username+"@"+inventoryGroups[inventoryIndex].JumpHostConfig.Hostname, "sshpass", "-p", host.Password, "ssh", "-o", "'StrictHostKeyChecking no'", "-t", "-q", host.Username+"@"+host.Hostname)
-
-					cmd.Stdout = os.Stdout
-					cmd.Stdin = os.Stdin
-					cmd.Stderr = os.Stderr
-
-					if err := cmd.Run(); err != nil {
-						fmt.Println("Error:", err)
-						os.Exit(1)
-					}
-
+					args := []string{"sshpass", "-p", inventoryGroups[inventoryIndex].JumpHostConfig.Password, "ssh", "-o", "StrictHostKeyChecking no", "-t", "-q", inventoryGroups[inventoryIndex].JumpHostConfig.Username + "@" + inventoryGroups[inventoryIndex].JumpHostConfig.Hostname, "sshpass", "-p", host.Password, "ssh", "-o", "'StrictHostKeyChecking no'", "-t", "-q", host.Username + "@" + host.Hostname}
+					executeCommand(args)
 				case 4: // Cancel
 					inModalDialog = false
 					app.SetRoot(listHostsGroup, true)
@@ -161,8 +129,8 @@ func initializeKubeJumpHostConfig(inventoryGroups []InventoryGroup, inventoryInd
 	return nil
 }
 
-func handleNoneCase(host Host) {
-	cmd := exec.Command("sshpass", "-p", host.Password, "ssh", "-o", "StrictHostKeyChecking no", "-t", host.Username+"@"+host.Hostname)
+func executeCommand(args []string) {
+	cmd := exec.Command(args[0], args[1:]...)
 	cmd.Stdout = os.Stdout
 	cmd.Stdin = os.Stdin
 	cmd.Stderr = os.Stderr
