@@ -46,6 +46,18 @@ func setHostListSelectedFunc(list *tview.List, hosts []Host, app *tview.Applicat
 		}
 
 		inModalDialog = true
+		kubectlArgs := []string{
+			"kubectl",
+			"--kubeconfig",
+			inventoryGroups[inventoryIndex].KubeJumpHostConfig.KubeconfigPath,
+			"-n",
+			inventoryGroups[inventoryIndex].KubeJumpHostConfig.Namespace,
+			"exec",
+			"-it",
+			inventoryGroups[inventoryIndex].KubeJumpHostConfig.PodName,
+			"--",
+			"sshpass",
+			"-p"}
 
 		dialog := tview.NewModal().
 			SetText("Choose a jumphost option for host: " + host.Name).
@@ -63,7 +75,7 @@ func setHostListSelectedFunc(list *tview.List, hosts []Host, app *tview.Applicat
 						fmt.Println(err)
 						os.Exit(1)
 					}
-					args := []string{"kubectl", "--kubeconfig", inventoryGroups[inventoryIndex].KubeJumpHostConfig.KubeconfigPath, "-n", inventoryGroups[inventoryIndex].KubeJumpHostConfig.Namespace, "exec", "-it", inventoryGroups[inventoryIndex].KubeJumpHostConfig.PodName, "--", "sshpass", "-p", inventoryGroups[inventoryIndex].JumpHostConfig.Password, "ssh", "-o", "StrictHostKeyChecking no", "-q", "-t", inventoryGroups[inventoryIndex].JumpHostConfig.Username + "@" + inventoryGroups[inventoryIndex].JumpHostConfig.Hostname, "sshpass", "-p", "'" + host.Password + "'", "ssh", "-o", "'StrictHostKeyChecking no'", "-q", host.Username + "@" + host.Hostname}
+					args := append(kubectlArgs, inventoryGroups[inventoryIndex].JumpHostConfig.Password, "ssh", "-o", "StrictHostKeyChecking no", "-q", "-t", inventoryGroups[inventoryIndex].JumpHostConfig.Username+"@"+inventoryGroups[inventoryIndex].JumpHostConfig.Hostname, "sshpass", "-p", "'"+host.Password+"'", "ssh", "-o", "'StrictHostKeyChecking no'", "-q", host.Username+"@"+host.Hostname)
 					executeCommand(args)
 				case 2: // Kube
 					app.Stop()
@@ -71,7 +83,7 @@ func setHostListSelectedFunc(list *tview.List, hosts []Host, app *tview.Applicat
 						fmt.Println(err)
 						os.Exit(1)
 					}
-					args := []string{"kubectl", "--kubeconfig", inventoryGroups[inventoryIndex].KubeJumpHostConfig.KubeconfigPath, "-n", inventoryGroups[inventoryIndex].KubeJumpHostConfig.Namespace, "exec", "-it", inventoryGroups[inventoryIndex].KubeJumpHostConfig.PodName, "--", "sshpass", "-p", host.Password, "ssh", "-o", "StrictHostKeyChecking no", "-t", "-q", host.Username + "@" + host.Hostname}
+					args := append(kubectlArgs, host.Password, "ssh", "-o", "StrictHostKeyChecking no", "-t", "-q", host.Username+"@"+host.Hostname)
 					executeCommand(args)
 				case 3: // Jump
 					app.Stop()
