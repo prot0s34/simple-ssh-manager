@@ -55,15 +55,7 @@ func setHostListSelectedFunc(list *tview.List, hosts []Host, app *tview.Applicat
 				switch buttonIndex {
 				case 0: // None
 					app.Stop()
-					cmd := exec.Command("sshpass", "-p", host.Password, "ssh", "-o", "StrictHostKeyChecking no", "-t", host.Username+"@"+host.Hostname)
-					cmd.Stdout = os.Stdout
-					cmd.Stdin = os.Stdin
-					cmd.Stderr = os.Stderr
-
-					if err := cmd.Run(); err != nil {
-						fmt.Println("Error:", err)
-						os.Exit(1)
-					}
+					handleNoneCase(host)
 
 				case 1: // Kube + Jump
 					if inventoryGroups[inventoryIndex].KubeJumpHostConfig.KubeconfigPath == "" {
@@ -173,4 +165,16 @@ func navigateBetweenInventoryGroups(app *tview.Application, inventoryIndex *int,
 
 		return event
 	})
+}
+
+func handleNoneCase(host Host) {
+	cmd := exec.Command("sshpass", "-p", host.Password, "ssh", "-o", "StrictHostKeyChecking no", "-t", host.Username+"@"+host.Hostname)
+	cmd.Stdout = os.Stdout
+	cmd.Stdin = os.Stdin
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Run(); err != nil {
+		fmt.Println("Error:", err)
+		os.Exit(1)
+	}
 }
