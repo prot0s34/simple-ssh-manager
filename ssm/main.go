@@ -28,7 +28,7 @@ func main() {
 
 	listHostsGroup := createHostList(app, inventoryGroups[inventoryIndex].Hosts, inventoryGroups[inventoryIndex].Name)
 
-	setHostListSelectedFunc(listHostsGroup, inventoryGroups[inventoryIndex].Hosts, app, inventoryGroups, listHostsGroup)
+	setHostListSelected(listHostsGroup, inventoryGroups[inventoryIndex].Hosts, app, inventoryGroups, listHostsGroup)
 
 	navigateBetweenInventoryGroups(app, &inventoryIndex, inventoryGroups, listHostsGroup)
 
