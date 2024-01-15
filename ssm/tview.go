@@ -36,6 +36,26 @@ func createHostList(app *tview.Application, hosts []Host, inventoryName string) 
 	return list
 }
 
+func navigateBetweenInventoryGroups(app *tview.Application, inventoryIndex *int, inventoryGroups []InventoryGroup, listHostsGroup *tview.List) {
+	app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		if inModalDialog {
+			return event
+		}
+
+		if event.Key() == tcell.KeyLeft {
+			*inventoryIndex = (*inventoryIndex - 1 + len(inventoryGroups)) % len(inventoryGroups)
+			listHostsGroup.Clear()
+			updateHostList(app, listHostsGroup, inventoryGroups[*inventoryIndex].Hosts, inventoryGroups[*inventoryIndex].Name)
+		} else if event.Key() == tcell.KeyRight {
+			*inventoryIndex = (*inventoryIndex + 1) % len(inventoryGroups)
+			listHostsGroup.Clear()
+			updateHostList(app, listHostsGroup, inventoryGroups[*inventoryIndex].Hosts, inventoryGroups[*inventoryIndex].Name)
+		}
+
+		return event
+	})
+}
+
 func setHostListSelected(list *tview.List, hosts []Host, app *tview.Application, inventoryGroups []InventoryGroup, listHostsGroup *tview.List) {
 	list.SetSelectedFunc(func(index int, mainText, secondaryText string, shortcut rune) {
 		host := inventoryGroups[inventoryIndex].Hosts[index]
@@ -64,8 +84,9 @@ func setHostListSelected(list *tview.List, hosts []Host, app *tview.Application,
 				switch buttonIndex {
 				case 0: // None
 					app.Stop()
-					args := []string{"sshpass", "-p", host.Password, "ssh", "-o", "StrictHostKeyChecking no", "-t", "-q", host.Username + "@" + host.Hostname}
-					executeCommand(args)
+					infoArgs := []string{"echo", "-e", "\\033[31mConnection: ->\\033[0m", host.Hostname}
+					connectionArgs := []string{"sshpass", "-p", host.Password, "ssh", "-o", "StrictHostKeyChecking no", "-t", "-q", host.Username + "@" + host.Hostname}
+					executeCommand(infoArgs, connectionArgs)
 				case 1: // Kube + Jump
 					app.Stop()
 					podName, err := initializeKubeJumpHostConfig(inventoryGroups, inventoryIndex)
@@ -73,8 +94,9 @@ func setHostListSelected(list *tview.List, hosts []Host, app *tview.Application,
 						fmt.Println(err)
 						os.Exit(1)
 					}
-					args := append(kubectlArgs, podName, "--", "sshpass", "-p", inventoryGroups[inventoryIndex].JumpHostConfig.Password, "ssh", "-o", "StrictHostKeyChecking no", "-q", "-t", inventoryGroups[inventoryIndex].JumpHostConfig.Username+"@"+inventoryGroups[inventoryIndex].JumpHostConfig.Hostname, "sshpass", "-p", "'"+host.Password+"'", "ssh", "-o", "'StrictHostKeyChecking no'", "-q", host.Username+"@"+host.Hostname)
-					executeCommand(args)
+					infoArgs := []string{"echo", "-e", "\\033[31mConnection: ->\\033[0m", podName, "\\033[31m->\\033[0m", inventoryGroups[inventoryIndex].JumpHostConfig.Hostname, "\\033[31m->\\033[0m", host.Hostname}
+					connectionArgs := append(kubectlArgs, podName, "--", "sshpass", "-p", inventoryGroups[inventoryIndex].JumpHostConfig.Password, "ssh", "-o", "StrictHostKeyChecking no", "-q", "-t", inventoryGroups[inventoryIndex].JumpHostConfig.Username+"@"+inventoryGroups[inventoryIndex].JumpHostConfig.Hostname, "sshpass", "-p", "'"+host.Password+"'", "ssh", "-o", "'StrictHostKeyChecking no'", "-q", host.Username+"@"+host.Hostname)
+					executeCommand(infoArgs, connectionArgs)
 				case 2: // Kube
 					app.Stop()
 					podName, err := initializeKubeJumpHostConfig(inventoryGroups, inventoryIndex)
@@ -82,12 +104,14 @@ func setHostListSelected(list *tview.List, hosts []Host, app *tview.Application,
 						fmt.Println(err)
 						os.Exit(1)
 					}
-					args := append(kubectlArgs, podName, "--", "sshpass", "-p", host.Password, "ssh", "-o", "StrictHostKeyChecking no", "-t", "-q", host.Username+"@"+host.Hostname)
-					executeCommand(args)
+					infoArgs := []string{"echo", "-e", "\\033[31mConnection: ->\\033[0m", podName, "\\033[31m->\\033[0m", host.Hostname}
+					connectionArgs := append(kubectlArgs, podName, "--", "sshpass", "-p", host.Password, "ssh", "-o", "StrictHostKeyChecking no", "-t", "-q", host.Username+"@"+host.Hostname)
+					executeCommand(infoArgs, connectionArgs)
 				case 3: // Jump
 					app.Stop()
-					args := []string{"sshpass", "-p", inventoryGroups[inventoryIndex].JumpHostConfig.Password, "ssh", "-o", "StrictHostKeyChecking no", "-t", "-q", inventoryGroups[inventoryIndex].JumpHostConfig.Username + "@" + inventoryGroups[inventoryIndex].JumpHostConfig.Hostname, "sshpass", "-p", host.Password, "ssh", "-o", "'StrictHostKeyChecking no'", "-t", "-q", host.Username + "@" + host.Hostname}
-					executeCommand(args)
+					infoArgs := []string{"echo", "-e", "\\033[31mConnection: ->\\033[0m", inventoryGroups[inventoryIndex].JumpHostConfig.Hostname, "\\033[31m->\\033[0m", host.Hostname}
+					connectionArgs := []string{"sshpass", "-p", inventoryGroups[inventoryIndex].JumpHostConfig.Password, "ssh", "-o", "StrictHostKeyChecking no", "-t", "-q", inventoryGroups[inventoryIndex].JumpHostConfig.Username + "@" + inventoryGroups[inventoryIndex].JumpHostConfig.Hostname, "sshpass", "-p", host.Password, "ssh", "-o", "'StrictHostKeyChecking no'", "-t", "-q", host.Username + "@" + host.Hostname}
+					executeCommand(infoArgs, connectionArgs)
 				case 4: // Cancel
 					inModalDialog = false
 					app.SetRoot(listHostsGroup, true)
@@ -96,26 +120,6 @@ func setHostListSelected(list *tview.List, hosts []Host, app *tview.Application,
 
 		app.SetRoot(dialog, true)
 		navigateBetweenInventoryGroups(app, &inventoryIndex, inventoryGroups, listHostsGroup)
-	})
-}
-
-func navigateBetweenInventoryGroups(app *tview.Application, inventoryIndex *int, inventoryGroups []InventoryGroup, listHostsGroup *tview.List) {
-	app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		if inModalDialog {
-			return event
-		}
-
-		if event.Key() == tcell.KeyLeft {
-			*inventoryIndex = (*inventoryIndex - 1 + len(inventoryGroups)) % len(inventoryGroups)
-			listHostsGroup.Clear()
-			updateHostList(app, listHostsGroup, inventoryGroups[*inventoryIndex].Hosts, inventoryGroups[*inventoryIndex].Name)
-		} else if event.Key() == tcell.KeyRight {
-			*inventoryIndex = (*inventoryIndex + 1) % len(inventoryGroups)
-			listHostsGroup.Clear()
-			updateHostList(app, listHostsGroup, inventoryGroups[*inventoryIndex].Hosts, inventoryGroups[*inventoryIndex].Name)
-		}
-
-		return event
 	})
 }
 
@@ -141,14 +145,24 @@ func initializeKubeJumpHostConfig(inventoryGroups []InventoryGroup, inventoryInd
 	return podName, nil
 }
 
-func executeCommand(args []string) {
-	cmd := exec.Command(args[0], args[1:]...)
-	cmd.Stdout = os.Stdout
-	cmd.Stdin = os.Stdin
-	cmd.Stderr = os.Stderr
+func executeCommand(infoArgs []string, connectionArgs []string) {
+	cmdInfo := exec.Command(infoArgs[0], infoArgs[1:]...)
+	cmdInfo.Stdout = os.Stdout
+	cmdInfo.Stdin = os.Stdin
+	cmdInfo.Stderr = os.Stderr
 
-	if err := cmd.Run(); err != nil {
-		fmt.Println("Error:", err)
+	if err := cmdInfo.Run(); err != nil {
+		fmt.Println("Connection info print error:", err)
+		os.Exit(1)
+	}
+
+	cmdConnection := exec.Command(connectionArgs[0], connectionArgs[1:]...)
+	cmdConnection.Stdout = os.Stdout
+	cmdConnection.Stdin = os.Stdin
+	cmdConnection.Stderr = os.Stderr
+
+	if err := cmdConnection.Run(); err != nil {
+		fmt.Println("Connection command execute error:", err)
 		os.Exit(1)
 	}
 }
