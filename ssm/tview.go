@@ -36,7 +36,7 @@ func createHostList(app *tview.Application, hosts []Host, inventoryName string) 
 	return list
 }
 
-func navigateBetweenInventoryGroups(app *tview.Application, inventoryIndex *int, inventoryGroups []InventoryGroup, listHostsGroup *tview.List) {
+func switchHostList(app *tview.Application, inventoryIndex *int, inventoryGroups []InventoryGroup, listHostsGroup *tview.List) {
 	app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if inModalDialog {
 			return event
@@ -56,7 +56,7 @@ func navigateBetweenInventoryGroups(app *tview.Application, inventoryIndex *int,
 	})
 }
 
-func setHostListSelected(list *tview.List, hosts []Host, app *tview.Application, inventoryGroups []InventoryGroup, listHostsGroup *tview.List) {
+func setHostSelected(list *tview.List, hosts []Host, app *tview.Application, inventoryGroups []InventoryGroup, listHostsGroup *tview.List) {
 	list.SetSelectedFunc(func(index int, mainText, secondaryText string, shortcut rune) {
 		host := inventoryGroups[inventoryIndex].Hosts[index]
 
@@ -119,7 +119,7 @@ func setHostListSelected(list *tview.List, hosts []Host, app *tview.Application,
 			})
 
 		app.SetRoot(dialog, true)
-		navigateBetweenInventoryGroups(app, &inventoryIndex, inventoryGroups, listHostsGroup)
+		switchHostList(app, &inventoryIndex, inventoryGroups, listHostsGroup)
 	})
 }
 

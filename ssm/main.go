@@ -28,9 +28,9 @@ func main() {
 
 	listHostsGroup := createHostList(app, inventoryGroups[inventoryIndex].Hosts, inventoryGroups[inventoryIndex].Name)
 
-	setHostListSelected(listHostsGroup, inventoryGroups[inventoryIndex].Hosts, app, inventoryGroups, listHostsGroup)
+	setHostSelected(listHostsGroup, inventoryGroups[inventoryIndex].Hosts, app, inventoryGroups, listHostsGroup)
 
-	navigateBetweenInventoryGroups(app, &inventoryIndex, inventoryGroups, listHostsGroup)
+	switchHostList(app, &inventoryIndex, inventoryGroups, listHostsGroup)
 
 	if err := app.SetRoot(listHostsGroup, true).Run(); err != nil {
 		fmt.Println("Error:", err)
