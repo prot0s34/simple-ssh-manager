@@ -25,9 +25,7 @@ func initKubernetesClient(kubeconfigPath string) (*kubernetes.Clientset, error) 
 }
 
 func findPodByKeyword(clientset *kubernetes.Clientset, namespace, keyword string) (string, error) {
-	pods, err := clientset.CoreV1().Pods(namespace).List(context.TODO(), metav1.ListOptions{
-		//		LabelSelector: "your-label-selector", // add functinal to match label selector if defined
-	})
+	pods, err := clientset.CoreV1().Pods(namespace).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		return "", err
 	}
