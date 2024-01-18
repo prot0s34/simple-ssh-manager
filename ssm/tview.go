@@ -36,7 +36,7 @@ func createHostList(app *tview.Application, hosts []Host, inventoryName string) 
 	return list
 }
 
-func switchHostList(app *tview.Application, inventoryIndex *int, inventoryGroups []InventoryGroup, listHostsGroup *tview.List) {
+func switchHostList(app *tview.Application, inventoryIndex *int, inventoryGroups []InventoryGroup, list *tview.List) {
 	app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if inModalDialog {
 			return event
@@ -44,19 +44,19 @@ func switchHostList(app *tview.Application, inventoryIndex *int, inventoryGroups
 
 		if event.Key() == tcell.KeyLeft {
 			*inventoryIndex = (*inventoryIndex - 1 + len(inventoryGroups)) % len(inventoryGroups)
-			listHostsGroup.Clear()
-			updateHostList(app, listHostsGroup, inventoryGroups[*inventoryIndex].Hosts, inventoryGroups[*inventoryIndex].Name)
+			list.Clear()
+			updateHostList(app, list, inventoryGroups[*inventoryIndex].Hosts, inventoryGroups[*inventoryIndex].Name)
 		} else if event.Key() == tcell.KeyRight {
 			*inventoryIndex = (*inventoryIndex + 1) % len(inventoryGroups)
-			listHostsGroup.Clear()
-			updateHostList(app, listHostsGroup, inventoryGroups[*inventoryIndex].Hosts, inventoryGroups[*inventoryIndex].Name)
+			list.Clear()
+			updateHostList(app, list, inventoryGroups[*inventoryIndex].Hosts, inventoryGroups[*inventoryIndex].Name)
 		}
 
 		return event
 	})
 }
 
-func setHostSelected(list *tview.List, hosts []Host, app *tview.Application, inventoryGroups []InventoryGroup, listHostsGroup *tview.List) {
+func setHostSelected(list *tview.List, hosts []Host, app *tview.Application, inventoryGroups []InventoryGroup) {
 	list.SetSelectedFunc(func(index int, mainText, secondaryText string, shortcut rune) {
 		host := inventoryGroups[inventoryIndex].Hosts[index]
 
@@ -114,12 +114,12 @@ func setHostSelected(list *tview.List, hosts []Host, app *tview.Application, inv
 					executeCommand(infoArgs, connectionArgs)
 				case 4: // Cancel
 					inModalDialog = false
-					app.SetRoot(listHostsGroup, true)
+					app.SetRoot(list, true)
 				}
 			})
 
 		app.SetRoot(dialog, true)
-		switchHostList(app, &inventoryIndex, inventoryGroups, listHostsGroup)
+		switchHostList(app, &inventoryIndex, inventoryGroups, list)
 	})
 }
 

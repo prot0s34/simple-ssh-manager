@@ -26,13 +26,13 @@ func main() {
 	}
 	inventoryIndex = 0
 
-	listHostsGroup := createHostList(app, inventoryGroups[inventoryIndex].Hosts, inventoryGroups[inventoryIndex].Name)
+	list := createHostList(app, inventoryGroups[inventoryIndex].Hosts, inventoryGroups[inventoryIndex].Name)
 
-	setHostSelected(listHostsGroup, inventoryGroups[inventoryIndex].Hosts, app, inventoryGroups, listHostsGroup)
+	setHostSelected(list, inventoryGroups[inventoryIndex].Hosts, app, inventoryGroups)
 
-	switchHostList(app, &inventoryIndex, inventoryGroups, listHostsGroup)
+	switchHostList(app, &inventoryIndex, inventoryGroups, list)
 
-	if err := app.SetRoot(listHostsGroup, true).Run(); err != nil {
+	if err := app.SetRoot(list, true).Run(); err != nil {
 		fmt.Println("Error:", err)
 		os.Exit(1)
 	}
