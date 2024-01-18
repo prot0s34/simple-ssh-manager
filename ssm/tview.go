@@ -89,7 +89,7 @@ func setHostSelected(list *tview.List, hosts []Host, app *tview.Application, inv
 					executeCommand(infoArgs, connectionArgs)
 				case 1: // Kube + Jump
 					app.Stop()
-					podName, err := initializeKubeJumpHostConfig(inventoryGroups, inventoryIndex)
+					podName, err := findJumpPod(inventoryGroups, inventoryIndex)
 					if err != nil {
 						fmt.Println(err)
 						os.Exit(1)
@@ -99,7 +99,7 @@ func setHostSelected(list *tview.List, hosts []Host, app *tview.Application, inv
 					executeCommand(infoArgs, connectionArgs)
 				case 2: // Kube
 					app.Stop()
-					podName, err := initializeKubeJumpHostConfig(inventoryGroups, inventoryIndex)
+					podName, err := findJumpPod(inventoryGroups, inventoryIndex)
 					if err != nil {
 						fmt.Println(err)
 						os.Exit(1)
@@ -123,7 +123,7 @@ func setHostSelected(list *tview.List, hosts []Host, app *tview.Application, inv
 	})
 }
 
-func initializeKubeJumpHostConfig(inventoryGroups []InventoryGroup, inventoryIndex int) (string, error) {
+func findJumpPod(inventoryGroups []InventoryGroup, inventoryIndex int) (string, error) {
 	if inventoryGroups[inventoryIndex].KubeJumpHostConfig.KubeconfigPath == "" {
 		return "", fmt.Errorf("error[initializeKubeJumpHostConfig]: KubeconfigPath is missing in the inventory")
 	}
