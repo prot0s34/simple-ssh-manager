@@ -43,6 +43,7 @@ chmod +x /usr/local/bin/sshmanager
 ```
 
 ### TODO - Features:
+- [ ] additional packaging?
 - [x] kubectl jumphost functional
 - [x] kubectl+bastion jumphost functional
 - [x] bastion(single regular host) jumphost functional
