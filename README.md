@@ -10,7 +10,7 @@
 </h1>
 
 
-<p>Terminal-based SSH connections manager, support several jumphost options and multiply host-groups.</p>
+<p>Terminal-based SSH connections manager, support "jump" options and multiply host groups.</p>
 <p>Written in Go with <a href=https://github.com/rivo/tview> rivo/tview</a> and <a href=https://github.com/kubernetes/client-go>kubernetes/client-go</a> </p>
 
 ### Preview:
