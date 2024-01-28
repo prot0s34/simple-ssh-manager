@@ -1,10 +1,17 @@
-# simple ssh manager 💻
+# simple ssh manager 📟
 
-![example workflow](https://github.com/prot0s34/simple-ssh-manager/actions/workflows/on_commit.yml/badge.svg/)
-![GitHub tag (with filter)](https://img.shields.io/github/v/tag/prot0s34/simple-ssh-manager)
+<h1>
+  <a href="#--------">
+    <img alt="" align="right" src="https://img.shields.io/github/v/tag/prot0s34/simple-ssh-manager"/>
+  </a>
+  <a href="#--------">
+    <img alt="" align="left" src="https://github.com/prot0s34/simple-ssh-manager/actions/workflows/on_commit.yml/badge.svg/"/>
+  </a>
+</h1>
 
-Lightweight SSH connections manager, support several jumphost options and multiply host-groups.
-Written in Go with [tview](https://github.com/rivo/tview) and [kubernetes/client-go](https://github.com/kubernetes/client-go).
+
+<p>Terminal-based SSH connections manager, support several jumphost options and multiply host-groups.</p>
+<p>Written in Go with <a href=https://github.com/rivo/tview> rivo/tview</a> and <a href=https://github.com/kubernetes/client-go>kubernetes/client-go</a> </p>
 
 ### Preview:
 <p align="left">
@@ -12,37 +19,41 @@ Written in Go with [tview](https://github.com/rivo/tview) and [kubernetes/client
 </p>
 
 
-### Inventory:
-- support multiply lists in one inventory file
-- support per-list jumphost and kubejumphost configs
+### 📓 Inventory:
+- support multiply hosts groups (lists) in one inventory file
+- support separate jumphost and kubejumphost configs for each hosts group
 - inventory should be in /home/$user/inventory.json or defined in ENV SSHMANAGER_INVENTORY=/path/to/inventory.json
 - regular host, kubernetes pod or both (kubernetes -> jumphost -> targethost) can be used as jump option
 
-### Jumphost options:
+### 🔌 Jumphost options:
 - **None** - localhost -> targethost
 - **Kube❯Jump** - localhost -> kubernetes pod -> jumphost -> targethost
 - **Kube** - localhost -> kubernetes pod -> targethost
 - **Jump** - localhost -> jumphost -> targethost
 
-### Kubernetes pod as jumphost - config:
+### 🔧 Configuration:
+```
+🚢 Kubernetes Pod as Jumphost:
 - kubeJumpHostConfig.kubeconfigPath - path to kubeconfig file (default: ~/.kube/config)
 - kubeJumpHostConfig.namespace - namespace of pod (used "default" if not defined)
 - kubeJumpHostConfig.podName - name of pod. If podName not defined, podNameTemplate will be used for pod search (for generic pod name)
 - kubeJumpHostConfig.podNameTemplate - template for pod name search
 
-### Jumphost - config:
+🔗 Jumphost - config:
 - JumpHostConfig.username - username for jumphost
 - JumpHostConfig.password - password for jumphost
 - JumpHostConfig.hostname - list of jumphosts
 
-### How-To Use:
+
 ```
-go build -o ./sshmanager .
+### 🚥 How-To Use:
+```
+go build -o sshmanager ./ssm
 cp sshmanager /usr/local/bin/
 chmod +x /usr/local/bin/sshmanager
 ```
 
-### TODO - Features:
+### ✅ TODO - Features:
 - [ ] additional packaging?
 - [x] kubectl jumphost functional
 - [x] kubectl+bastion jumphost functional
@@ -56,7 +67,7 @@ chmod +x /usr/local/bin/sshmanager
 - [ ] use tmux inside of app window instead of current behavior (close app->exec ssh in default terminal)
 - [ ] use crypto/ssh for connection instead of exec ssh
 - [ ] refac exec ssh commands (use ssh config file instead of command line args?)
-- [ ] ssh command builder?
+- [x] ssh command builder?
 - [x] make release?
 - [x] make CI/Actions?
 - [x] add binary release to CI/Actions
@@ -69,14 +80,16 @@ chmod +x /usr/local/bin/sshmanager
 - [x] cleanup binary from git history
 - [x] ~wtf 50M binary~, shrinked to 31MB, need to drop/replace go-client for kubernetes for more lightweight binary :(
 
-### TO FIX:
-- "Recovered from panic: runtime error: index out of range [n] with length n" after quit app with 'q'
+### ⚠️ TO FIX:
+- "Recovered from panic: runtime error: index out of range [n] with length n" after quit app with 'q' (meanwhile, signal from ctrl+c handled correctly)
 
-### Changelog:
+### ⛽ Changelog:
+- 2024.01.28 v0.1.12 add minor improvments (as print connstring), refactoring, ssh args structure, binary size optimization, and so on.
 - 2023.10.29 add binary release to CI/Actions
 - 2023.10.23 fix bug with selecting host for connect (affect lists that different from first list)
 - 2023.10.22: added nested (kubernetes->jumphost) jump option, add regular jumphost option, back to single-list draw with ability to switch between lists, allow multiply lists in one inventory file, add separate jump configs per host, and so on (minor changes)
 - 2023.10.21: added kubernetes jumphost support and modal dialog for jump options, fixed minor bugs
 
-### Releases:
+### 🏁 Releases:
+- v0.1.12 - minor fixes & improvments
 - v0.1.11 - init version
