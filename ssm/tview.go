@@ -42,16 +42,20 @@ func switchHostList(app *tview.Application, inventoryIndex *int, inventoryGroups
 			return event
 		}
 
-		if event.Key() == tcell.KeyLeft {
+		if event.Key() == tcell.KeyLeft || event.Rune() == 'h' {
 			*inventoryIndex = (*inventoryIndex - 1 + len(inventoryGroups)) % len(inventoryGroups)
 			list.Clear()
 			updateHostList(app, list, inventoryGroups[*inventoryIndex].Hosts, inventoryGroups[*inventoryIndex].Name)
-		} else if event.Key() == tcell.KeyRight {
+		} else if event.Key() == tcell.KeyRight || event.Rune() == 'l' {
 			*inventoryIndex = (*inventoryIndex + 1) % len(inventoryGroups)
 			list.Clear()
 			updateHostList(app, list, inventoryGroups[*inventoryIndex].Hosts, inventoryGroups[*inventoryIndex].Name)
 		}
-
+		if event.Rune() == 'j' && list.GetCurrentItem() < list.GetItemCount()-1 {
+			list.SetCurrentItem(list.GetCurrentItem() + 1)
+		} else if event.Rune() == 'k' && list.GetCurrentItem() > 0 {
+			list.SetCurrentItem(list.GetCurrentItem() - 1)
+		}
 		return event
 	})
 }
