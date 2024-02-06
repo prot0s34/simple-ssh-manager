@@ -82,6 +82,8 @@ chmod +x /usr/local/bin/sshmanager
 - [ ] add kube context to inventory and kube functions 
 - [x] cleanup binary from git history
 - [x] ~wtf 50M binary~, shrinked to 31MB, need to drop/replace go-client for kubernetes for more lightweight binary :(
+- [ ] yaml inventory?
+- [ ] vim-like command mode for :q and :/ ? 
 
 ### ⚠️ TO FIX:
 - "Recovered from panic: runtime error: index out of range [n] with length n" after quit app with 'q' (meanwhile, signal from ctrl+c handled correctly)
