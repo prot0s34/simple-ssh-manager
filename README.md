@@ -10,7 +10,11 @@
 </h1>
 
 
-<p>Terminal based SSH connections manager, support "jump" options and multiply host groups.</p>
+<p>Terminal based SSH connections manager</p>
+<p>Allow you create multiply "inventory" host lists and connect into target host with few key motions</p>
+<p>You can connect to target host using several "hop" options - via regular jumphost, kubernetes pod as proxy, kubernetes pod + jumphost as proxy, direct connection</p>
+<p>For using k8s pod as proxy - you need to install SOCKS5 pod in your cluster </p>
+<p>Currently it support only password-based auth (btw crypto/ssh used, BUT passwords in inventory stored as plaintext, keep in mind)</p>
 <p>Written in Go with <a href=https://github.com/rivo/tview> rivo/tview</a> and <a href=https://github.com/kubernetes/client-go>kubernetes/client-go</a> </p>
 
 ### Preview:
@@ -42,7 +46,7 @@
 🔗 Jumphost - config:
 - JumpHostConfig.username - username for jumphost
 - JumpHostConfig.password - password for jumphost
-- JumpHostConfig.hostname - list of jumphosts
+- JumpHostConfig.hostname - hostname for jumphost
 
 
 ```
@@ -65,17 +69,16 @@ chmod +x /usr/local/bin/sshmanager
 - [ ] add ssh key-based auth support
 - [ ] exclude "legend" information to bottom panel
 - [ ] use tmux inside of app window instead of current behavior (close app->exec ssh in default terminal)
-- [ ] use crypto/ssh for connection instead of exec ssh
-- [ ] refac exec ssh commands (use ssh config file instead of command line args?)
+- [x] use crypto/ssh for connection instead of exec ssh
+- [x] refac exec ssh commands (use ssh config file instead of command line args?)
 - [x] ssh command builder?
 - [x] make release?
 - [x] make CI/Actions?
 - [x] add binary release to CI/Actions
 - [ ] add tagging at pull requests to CI/Actions
 - [ ] refac Hosts struct and optimize struct pass and use
-- [ ] add echo "connected to $hostname" on each jumphost on the way to target host
+- [x] add echo "connected to $hostname" on each jumphost on the way to target host
 - [x] add 'no strict host checking' for kube+jump option
-- [ ] add "kubectl run debug --rm -i --tty \ --image=... \ --overrides='{"spec": { "nodeSelector": {"kubernetes.io/hostname": "some-node"}}}' -- bash" option?
 - [ ] add kube context to inventory and kube functions 
 - [x] cleanup binary from git history
 - [x] ~wtf 50M binary~, shrinked to 31MB, need to drop/replace go-client for kubernetes for more lightweight binary :(
@@ -84,6 +87,7 @@ chmod +x /usr/local/bin/sshmanager
 - "Recovered from panic: runtime error: index out of range [n] with length n" after quit app with 'q' (meanwhile, signal from ctrl+c handled correctly)
 
 ### ⛽ Changelog:
+- 2024.02.06 huge refactoring of ssh connections (sshpass bye-bye, welcome crypto/ssh lib) and implementing SOCKS5 k8s proxy with port-forwarding
 - 2024.01.28 v0.1.12 add minor improvments (as print connstring), refactoring, ssh args structure, binary size optimization, and so on.
 - 2023.10.29 add binary release to CI/Actions
 - 2023.10.23 fix bug with selecting host for connect (affect lists that different from first list)
