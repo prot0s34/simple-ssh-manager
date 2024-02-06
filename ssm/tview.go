@@ -15,7 +15,7 @@ func updateHostList(app *tview.Application, list *tview.List, hosts []Host, inve
 		list.SetTitle("[black:darkcyan]" + inventoryName + "[white:-]").SetTitleAlign(tview.AlignLeft)
 		list.Box.SetBorderAttributes(tcell.RuneBoard)
 	}
-	list.AddItem("", "'Q' to Quit, < or > to change host list, 'Enter' to connect", 'q', func() {
+	list.AddItem("", "'Q' to Quit, hjkl or Arrow Keys to navigate, 'Enter' to connect", 'q', func() {
 		app.Stop()
 	})
 }
@@ -29,7 +29,7 @@ func createHostList(app *tview.Application, hosts []Host, inventoryName string) 
 		list.Box.SetBorderAttributes(tcell.RuneBoard)
 	}
 
-	list.AddItem("", "'Q' to Quit, < or > to change host list, 'Enter' to connect", 'q', func() {
+	list.AddItem("", "'Q' to Quit, hjkl or Arrow Keys to navigate, 'Enter' to connect", 'q', func() {
 		app.Stop()
 	})
 
