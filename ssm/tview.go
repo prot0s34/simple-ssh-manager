@@ -82,11 +82,9 @@ func setHostSelected(list *tview.List, hosts []Host, app *tview.Application, inv
 				switch buttonIndex {
 				case 0: // None
 					app.Stop()
-					// Direct connection to the host without a jump host
 					executeSSHCommand(host.Username, host.Password, host.Hostname)
 				case 1: // Kube + Jump
 					app.Stop()
-					// Connect to pod, then to the jump host and then to the target host
 					podName, err := findJumpPod(inventoryGroups, inventoryIndex)
 					if err != nil {
 						fmt.Println(err)
@@ -100,7 +98,6 @@ func setHostSelected(list *tview.List, hosts []Host, app *tview.Application, inv
 					executeSSHKubeJumpCommand(kubeconfig, namespace, podName, jumpHost, jumpHostUsername, jumpHostPassword, host.Username, host.Password, host.Hostname)
 				case 2: // Kube
 					app.Stop()
-					// Connect to pod, and then to the target host
 					podName, err := findJumpPod(inventoryGroups, inventoryIndex)
 					if err != nil {
 						fmt.Println(err)
@@ -111,7 +108,6 @@ func setHostSelected(list *tview.List, hosts []Host, app *tview.Application, inv
 					executeSSHKubeCommand(kubeconfig, namespace, podName, host.Username, host.Password, host.Hostname)
 				case 3: // Jump
 					app.Stop()
-					// Connect via the jump host
 					jumpHost := inventoryGroups[inventoryIndex].JumpHostConfig.Hostname
 					executeSSHCommand(host.Username, inventoryGroups[inventoryIndex].JumpHostConfig.Password, jumpHost)
 				case 4: // Cancel
@@ -149,7 +145,7 @@ func findJumpPod(inventoryGroups []InventoryGroup, inventoryIndex int) (string, 
 
 func executeSSHCommand(username, password, hostname string) {
 	log.Printf("Configuring SSH client for %s...\n", hostname)
-	// Configure the SSH client.
+
 	config := &ssh.ClientConfig{
 		User: username,
 		Auth: []ssh.AuthMethod{
@@ -159,7 +155,7 @@ func executeSSHCommand(username, password, hostname string) {
 	}
 
 	log.Printf("Connecting to SSH server %s...\n", hostname)
-	// Connect to the SSH server.
+
 	client, err := ssh.Dial("tcp", hostname+":22", config)
 	if err != nil {
 		log.Fatalf("Failed to dial: %s", err)
@@ -168,7 +164,7 @@ func executeSSHCommand(username, password, hostname string) {
 	log.Println("SSH server connection established.")
 
 	log.Println("Creating new SSH session...")
-	// Start a new SSH session.
+
 	session, err := client.NewSession()
 	if err != nil {
 		log.Fatalf("Failed to create session: %s", err)
@@ -176,7 +172,6 @@ func executeSSHCommand(username, password, hostname string) {
 	defer session.Close()
 	log.Println("SSH session created.")
 
-	// Save the current state of the terminal.
 	oldState, err := term.MakeRaw(int(os.Stdin.Fd()))
 	if err != nil {
 		log.Fatalf("Failed to set terminal to raw mode: %s", err)
@@ -187,13 +182,11 @@ func executeSSHCommand(username, password, hostname string) {
 		}
 	}()
 
-	// Set IO.
 	session.Stdout = os.Stdout
 	session.Stderr = os.Stderr
 	session.Stdin = os.Stdin
 
 	log.Println("Requesting pseudo terminal...")
-	// Request a pseudo terminal.
 	if err := session.RequestPty("xterm", 40, 80, ssh.TerminalModes{
 		ssh.ECHO:          1,
 		ssh.TTY_OP_ISPEED: 14400,
@@ -203,13 +196,12 @@ func executeSSHCommand(username, password, hostname string) {
 	}
 
 	log.Println("Starting shell...")
-	// Start a shell.
+
 	if err := session.Shell(); err != nil {
 		log.Fatalf("Failed to start shell: %s", err)
 	}
 
 	log.Println("Waiting for SSH session to finish...")
-	// Wait for the session to finish.
 	if err := session.Wait(); err != nil {
 		if exitErr, ok := err.(*ssh.ExitError); ok {
 			if exitErr.ExitStatus() == 0 {
@@ -225,17 +217,15 @@ func executeSSHCommand(username, password, hostname string) {
 
 func executeSSHJumpCommand(jumpUsername, jumpPassword, jumpHost, targetUsername, targetPassword, targetHost string) {
 	log.Println("Configuring SSH client for jump host...")
-	// SSH client configuration for the jump host.
 	jumpConfig := &ssh.ClientConfig{
 		User: jumpUsername,
 		Auth: []ssh.AuthMethod{
 			ssh.Password(jumpPassword),
 		},
-		HostKeyCallback: ssh.InsecureIgnoreHostKey(), // Note: Replace with proper host key checking in production.
+		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}
 
 	log.Printf("Connecting to jump host %s...\n", jumpHost)
-	// Connect to the jump host.
 	jumpClient, err := ssh.Dial("tcp", jumpHost+":22", jumpConfig)
 	if err != nil {
 		log.Fatalf("Failed to dial jump host: %s", err)
@@ -244,17 +234,15 @@ func executeSSHJumpCommand(jumpUsername, jumpPassword, jumpHost, targetUsername,
 	log.Println("Connected to jump host.")
 
 	log.Println("Configuring SSH client for target host...")
-	// SSH client configuration for the target host.
 	targetConfig := &ssh.ClientConfig{
 		User: targetUsername,
 		Auth: []ssh.AuthMethod{
 			ssh.Password(targetPassword),
 		},
-		HostKeyCallback: ssh.InsecureIgnoreHostKey(), // Note: Replace with proper host key checking in production.
+		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}
 
 	log.Printf("Establishing connection to target host %s through jump host...\n", targetHost)
-	// Establish a connection to the target host through the jump host's client.
 	conn, err := jumpClient.Dial("tcp", targetHost+":22")
 	if err != nil {
 		log.Fatalf("Failed to dial target host from jump host: %s", err)
@@ -281,28 +269,24 @@ func executeSSHJumpCommand(jumpUsername, jumpPassword, jumpHost, targetUsername,
 			log.Fatalf("Failed to restore terminal: %s", err)
 		}
 	}()
-	// Set IO.
 	session.Stdout = os.Stdout
 	session.Stderr = os.Stderr
 	session.Stdin = os.Stdin
 
 	log.Println("Requesting pseudo terminal on target host...")
-	// Request a pseudo terminal.
 	if err := session.RequestPty("xterm", 40, 80, ssh.TerminalModes{
-		ssh.ECHO:          1,     // Enable echoing.
-		ssh.TTY_OP_ISPEED: 14400, // Input speed = 14.4kbaud.
-		ssh.TTY_OP_OSPEED: 14400, // Output speed = 14.4kbaud.
+		ssh.ECHO:          1,
+		ssh.TTY_OP_ISPEED: 14400,
+		ssh.TTY_OP_OSPEED: 14400,
 	}); err != nil {
 		log.Fatalf("Failed to request pseudo terminal on target host: %s", err)
 	}
 
 	log.Println("Starting shell on target host...")
-	// Start a shell.
 	if err := session.Shell(); err != nil {
 		log.Fatalf("Failed to start shell on target host: %s", err)
 	}
 
-	// Wait for the session to finish.
 	log.Println("Waiting for the session on target host to finish...")
 	if err := session.Wait(); err != nil {
 		if exitErr, ok := err.(*ssh.ExitError); ok {
@@ -318,10 +302,9 @@ func executeSSHJumpCommand(jumpUsername, jumpPassword, jumpHost, targetUsername,
 }
 
 func executeSSHKubeCommand(kubeconfigPath, namespace, podName, targetUsername, targetPassword, targetHost string) {
-	localPort := 49152 // Local port for forwarding
-	targetPort := 1080 // Dante SOCKS proxy port in the pod
+	localPort := 49152
+	targetPort := 1080
 
-	// Start port forwarding
 	log.Println("Starting port forwarding...")
 	portForwardCmd := exec.Command("kubectl", "port-forward", "svc/dante", fmt.Sprintf("%d:%d", localPort, targetPort), "-n", namespace, "--kubeconfig", kubeconfigPath)
 	portForwardCmd.Stderr = os.Stderr
@@ -341,7 +324,6 @@ func executeSSHKubeCommand(kubeconfigPath, namespace, podName, targetUsername, t
 
 	time.Sleep(2 * time.Second)
 
-	// Create a SOCKS5 dialer
 	log.Println("Creating SOCKS5 dialer...")
 	dialer, err := proxy.SOCKS5("tcp", fmt.Sprintf("localhost:%d", localPort), nil, proxy.Direct)
 	if err != nil {
@@ -349,7 +331,6 @@ func executeSSHKubeCommand(kubeconfigPath, namespace, podName, targetUsername, t
 	}
 	log.Println("SOCKS5 dialer created.")
 
-	// Dial the SSH server
 	log.Printf("Dialing SSH server %s via SOCKS5 proxy...\n", targetHost)
 	conn, err := dialer.Dial("tcp", fmt.Sprintf("%s:%d", targetHost, 22))
 	if err != nil {
@@ -357,12 +338,11 @@ func executeSSHKubeCommand(kubeconfigPath, namespace, podName, targetUsername, t
 	}
 	log.Println("SSH server dialed.")
 
-	// Set up the SSH connection
 	log.Println("Setting up SSH connection...")
 	ncc, chans, reqs, err := ssh.NewClientConn(conn, fmt.Sprintf("%s:%d", targetHost, 22), &ssh.ClientConfig{
 		User:            targetUsername,
 		Auth:            []ssh.AuthMethod{ssh.Password(targetPassword)},
-		HostKeyCallback: ssh.InsecureIgnoreHostKey(), // Use proper host key verification in production
+		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	})
 	if err != nil {
 		log.Fatalf("Failed to create SSH client connection: %s", err)
@@ -371,7 +351,6 @@ func executeSSHKubeCommand(kubeconfigPath, namespace, podName, targetUsername, t
 	log.Println("SSH connection established.")
 	defer client.Close()
 
-	// Start a new SSH session
 	log.Println("Starting SSH session...")
 	session, err := client.NewSession()
 	if err != nil {
@@ -391,7 +370,6 @@ func executeSSHKubeCommand(kubeconfigPath, namespace, podName, targetUsername, t
 	session.Stdout = os.Stdout
 	session.Stderr = os.Stderr
 
-	// Request a pseudo terminal
 	if err := session.RequestPty("xterm", 40, 80, ssh.TerminalModes{
 		ssh.ECHO:          1,
 		ssh.TTY_OP_ISPEED: 14400,
@@ -400,23 +378,20 @@ func executeSSHKubeCommand(kubeconfigPath, namespace, podName, targetUsername, t
 		log.Fatalf("Failed to request pseudo terminal: %s", err)
 	}
 
-	// Start a shell
 	if err := session.Shell(); err != nil {
 		log.Fatalf("Failed to start shell: %s", err)
 	}
 	log.Println("Shell started.")
 
-	// Wait for the session to finish
 	if err := session.Wait(); err != nil {
 		log.Printf("SSH session finished with error: %s", err)
 	}
 }
 
 func executeSSHKubeJumpCommand(kubeconfigPath, namespace, podName, jumpHost, jumpHostUser, jumpHostPass, targetUsername, targetPassword, targetHost string) {
-	localPort := 49152 // Local port for forwarding to the Dante SOCKS proxy
-	targetPort := 1080 // Port where Dante SOCKS proxy is listening in the pod
+	localPort := 49152
+	targetPort := 1080
 
-	// Start port forwarding
 	log.Println("Starting port forwarding...")
 	portForwardCmd := exec.Command("kubectl", "port-forward", "svc/dante", fmt.Sprintf("%d:%d", localPort, targetPort), "-n", namespace, "--kubeconfig", kubeconfigPath)
 	portForwardCmd.Stderr = os.Stderr
@@ -438,7 +413,6 @@ func executeSSHKubeJumpCommand(kubeconfigPath, namespace, podName, jumpHost, jum
 
 	time.Sleep(2 * time.Second)
 
-	// Create a SOCKS5 dialer
 	log.Println("Creating SOCKS5 dialer...")
 	dialer, err := proxy.SOCKS5("tcp", fmt.Sprintf("localhost:%d", localPort), nil, proxy.Direct)
 	if err != nil {
@@ -446,7 +420,6 @@ func executeSSHKubeJumpCommand(kubeconfigPath, namespace, podName, jumpHost, jum
 	}
 	log.Println("SOCKS5 dialer created.")
 
-	// First, establish an SSH connection to the jump host
 	log.Printf("Connecting to jump host %s...\n", jumpHost)
 	jumpHostConfig := &ssh.ClientConfig{
 		User: jumpHostUser,
@@ -468,7 +441,6 @@ func executeSSHKubeJumpCommand(kubeconfigPath, namespace, podName, jumpHost, jum
 	jumpHostClient := ssh.NewClient(jumpHostSSHConn, chans, reqs)
 	defer jumpHostClient.Close()
 
-	// Then, use the jump host SSH client to connect to the target host
 	log.Printf("Connecting to target host %s via jump host...\n", targetHost)
 	targetHostConfig := &ssh.ClientConfig{
 		User: targetUsername,
@@ -490,7 +462,6 @@ func executeSSHKubeJumpCommand(kubeconfigPath, namespace, podName, jumpHost, jum
 	targetHostClient := ssh.NewClient(targetHostSSHConn, chans, reqs)
 	defer targetHostClient.Close()
 
-	// Start a new SSH session on the target host
 	log.Println("Starting SSH session on target host...")
 	session, err := targetHostClient.NewSession()
 	if err != nil {
@@ -510,7 +481,6 @@ func executeSSHKubeJumpCommand(kubeconfigPath, namespace, podName, jumpHost, jum
 	session.Stdout = os.Stdout
 	session.Stderr = os.Stderr
 
-	// Request a pseudo terminal
 	if err := session.RequestPty("xterm", 40, 80, ssh.TerminalModes{
 		ssh.ECHO:          1,
 		ssh.TTY_OP_ISPEED: 14400,
@@ -519,13 +489,11 @@ func executeSSHKubeJumpCommand(kubeconfigPath, namespace, podName, jumpHost, jum
 		log.Fatalf("Failed to request pseudo terminal on target host: %s", err)
 	}
 
-	// Start a shell
 	if err := session.Shell(); err != nil {
 		log.Fatalf("Failed to start shell on target host: %s", err)
 	}
 	log.Println("Shell started on target host.")
 
-	// Wait for the session to finish
 	if err := session.Wait(); err != nil {
 		log.Printf("SSH session on target host finished with error: %s", err)
 	}
