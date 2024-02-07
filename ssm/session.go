@@ -101,22 +101,26 @@ func executeSSHKubeCommand(kubeconfigPath, namespace, podName, targetUsername, t
 	localPort := 49152
 	targetPort := 1080
 
-	log.Println("Starting port forwarding...")
-	portForwardCmd := exec.Command("kubectl", "port-forward", "svc/dante", fmt.Sprintf("%d:%d", localPort, targetPort), "-n", namespace, "--kubeconfig", kubeconfigPath)
-	portForwardCmd.Stderr = os.Stderr
+	if isPortOpen(localPort) {
+		log.Printf("Local port %d is already open. Attempting to use the existing forwarding...\n", localPort)
+	} else {
+		log.Println("Starting port forwarding...")
+		portForwardCmd := exec.Command("kubectl", "port-forward", "svc/dante", fmt.Sprintf("%d:%d", localPort, targetPort), "-n", namespace, "--kubeconfig", kubeconfigPath)
+		portForwardCmd.Stderr = os.Stderr
 
-	if err := portForwardCmd.Start(); err != nil {
-		log.Fatalf("Failed to start port-forwarding: %s", err)
-	}
-	log.Println("Port forwarding started.")
-
-	defer func() {
-		log.Println("Terminating port forwarding...")
-		if err := portForwardCmd.Process.Kill(); err != nil {
-			log.Printf("Failed to kill port-forwarding process: %s", err)
+		if err := portForwardCmd.Start(); err != nil {
+			log.Fatalf("Failed to start port-forwarding: %s", err)
 		}
-		log.Println("Port forwarding terminated.")
-	}()
+		log.Println("Port forwarding started.")
+
+		defer func() {
+			log.Println("Terminating port forwarding...")
+			if err := portForwardCmd.Process.Kill(); err != nil {
+				log.Printf("Failed to kill port-forwarding process: %s", err)
+			}
+			log.Println("Port forwarding terminated.")
+		}()
+	}
 
 	time.Sleep(2 * time.Second)
 
@@ -164,24 +168,26 @@ func executeSSHKubeJumpCommand(kubeconfigPath, namespace, podName, jumpHost, jum
 	localPort := 49152
 	targetPort := 1080
 
-	log.Println("Starting port forwarding...")
-	portForwardCmd := exec.Command("kubectl", "port-forward", "svc/dante", fmt.Sprintf("%d:%d", localPort, targetPort), "-n", namespace, "--kubeconfig", kubeconfigPath)
-	portForwardCmd.Stderr = os.Stderr
+	if isPortOpen(localPort) {
+		log.Printf("Local port %d is already open. Attempting to use the existing forwarding...\n", localPort)
+	} else {
+		log.Println("Starting port forwarding...")
+		portForwardCmd := exec.Command("kubectl", "port-forward", "svc/dante", fmt.Sprintf("%d:%d", localPort, targetPort), "-n", namespace, "--kubeconfig", kubeconfigPath)
+		portForwardCmd.Stderr = os.Stderr
 
-	if err := portForwardCmd.Start(); err != nil {
-		log.Fatalf("Failed to start port-forwarding: %s", err)
-	}
-	log.Println("Port forwarding started.")
-
-	defer func() {
-		fmt.Print("\033[0m")
-		log.Println("Terminating port forwarding...")
-		if err := portForwardCmd.Process.Kill(); err != nil {
-			log.Printf("Failed to kill port-forwarding process: %s", err)
+		if err := portForwardCmd.Start(); err != nil {
+			log.Fatalf("Failed to start port-forwarding: %s", err)
 		}
-		fmt.Print("\033[0m")
-		log.Println("Port forwarding terminated.")
-	}()
+		log.Println("Port forwarding started.")
+
+		defer func() {
+			log.Println("Terminating port forwarding...")
+			if err := portForwardCmd.Process.Kill(); err != nil {
+				log.Printf("Failed to kill port-forwarding process: %s", err)
+			}
+			log.Println("Port forwarding terminated.")
+		}()
+	}
 
 	time.Sleep(2 * time.Second)
 
