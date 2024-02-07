@@ -3,16 +3,11 @@ package main
 import (
 	"fmt"
 	"golang.org/x/crypto/ssh"
-	"golang.org/x/net/proxy"
 	"log"
-	"os"
-	"os/exec"
-	"time"
 )
 
 func executeSSHCommand(targetUsername, targetPassword, targetHost string) {
 	log.Printf("Configuring SSH client for %s...\n", targetHost)
-
 	config := &ssh.ClientConfig{
 		User: targetUsername,
 		Auth: []ssh.AuthMethod{
@@ -22,14 +17,12 @@ func executeSSHCommand(targetUsername, targetPassword, targetHost string) {
 	}
 
 	log.Printf("Connecting to SSH server %s...\n", targetHost)
-
 	client, err := ssh.Dial("tcp", targetHost+":22", config)
 	if err != nil {
 		log.Fatalf("Failed to dial: %s", err)
 	}
 	defer client.Close()
 	log.Println("SSH server connection established.")
-
 	log.Println("Creating new SSH session...")
 
 	session, err := client.NewSession()
@@ -98,48 +91,11 @@ func executeSSHJumpCommand(jumpUsername, jumpPassword, jumpHost, targetUsername,
 }
 
 func executeSSHKubeCommand(kubeconfigPath, namespace, podName, targetUsername, targetPassword, targetHost string) {
-	localPort := 49152
-	targetPort := 1080
 
-	if isPortOpen(localPort) {
-		log.Printf("Local port %d is already open. Attempting to use the existing forwarding...\n", localPort)
-	} else {
-		log.Println("Starting port forwarding...")
-		portForwardCmd := exec.Command("kubectl", "port-forward", "svc/dante", fmt.Sprintf("%d:%d", localPort, targetPort), "-n", namespace, "--kubeconfig", kubeconfigPath)
-		portForwardCmd.Stderr = os.Stderr
-
-		if err := portForwardCmd.Start(); err != nil {
-			log.Fatalf("Failed to start port-forwarding: %s", err)
-		}
-		log.Println("Port forwarding started.")
-
-		defer func() {
-			log.Println("Terminating port forwarding...")
-			if err := portForwardCmd.Process.Kill(); err != nil {
-				log.Printf("Failed to kill port-forwarding process: %s", err)
-			}
-			log.Println("Port forwarding terminated.")
-		}()
-
-		log.Println("Waiting for port forwarding to establish...")
-		if !waitForPortOpen(localPort, 10*time.Second) {
-			log.Fatalf("Timeout reached, port %d did not open", localPort)
-		}
-	}
-
-	log.Println("Creating SOCKS5 dialer...")
-	dialer, err := proxy.SOCKS5("tcp", fmt.Sprintf("localhost:%d", localPort), nil, proxy.Direct)
+	conn, err := setupProxyDialer(kubeconfigPath, namespace, 49152, 1080, targetHost)
 	if err != nil {
-		log.Fatalf("Failed to create SOCKS5 dialer: %s", err)
+		log.Fatalf("Error setting up port forwarding and dialing: %v", err)
 	}
-	log.Println("SOCKS5 dialer created.")
-
-	log.Printf("Dialing SSH server %s via SOCKS5 proxy...\n", targetHost)
-	conn, err := dialer.Dial("tcp", fmt.Sprintf("%s:%d", targetHost, 22))
-	if err != nil {
-		log.Fatalf("Failed to dial SSH server via SOCKS5 proxy: %s", err)
-	}
-	log.Println("SSH server dialed.")
 
 	log.Println("Setting up SSH connection...")
 	ncc, chans, reqs, err := ssh.NewClientConn(conn, fmt.Sprintf("%s:%d", targetHost, 22), &ssh.ClientConfig{
@@ -168,41 +124,6 @@ func executeSSHKubeCommand(kubeconfigPath, namespace, podName, targetUsername, t
 }
 
 func executeSSHKubeJumpCommand(kubeconfigPath, namespace, podName, jumpHost, jumpUsername, jumpPassword, targetUsername, targetPassword, targetHost string) {
-	localPort := 49152
-	targetPort := 1080
-
-	if isPortOpen(localPort) {
-		log.Printf("Local port %d is already open. Attempting to use the existing forwarding...\n", localPort)
-	} else {
-		log.Println("Starting port forwarding...")
-		portForwardCmd := exec.Command("kubectl", "port-forward", "svc/dante", fmt.Sprintf("%d:%d", localPort, targetPort), "-n", namespace, "--kubeconfig", kubeconfigPath)
-		portForwardCmd.Stderr = os.Stderr
-
-		if err := portForwardCmd.Start(); err != nil {
-			log.Fatalf("Failed to start port-forwarding: %s", err)
-		}
-		log.Println("Port forwarding started.")
-
-		defer func() {
-			log.Println("Terminating port forwarding...")
-			if err := portForwardCmd.Process.Kill(); err != nil {
-				log.Printf("Failed to kill port-forwarding process: %s", err)
-			}
-			log.Println("Port forwarding terminated.")
-		}()
-
-		log.Println("Waiting for port forwarding to establish...")
-		if !waitForPortOpen(localPort, 10*time.Second) {
-			log.Fatalf("Timeout reached, port %d did not open", localPort)
-		}
-	}
-
-	log.Println("Creating SOCKS5 dialer...")
-	dialer, err := proxy.SOCKS5("tcp", fmt.Sprintf("localhost:%d", localPort), nil, proxy.Direct)
-	if err != nil {
-		log.Fatalf("Failed to create SOCKS5 dialer: %s", err)
-	}
-	log.Println("SOCKS5 dialer created.")
 
 	log.Printf("Connecting to jump host %s...\n", jumpHost)
 	jumpHostConfig := &ssh.ClientConfig{
@@ -213,7 +134,7 @@ func executeSSHKubeJumpCommand(kubeconfigPath, namespace, podName, jumpHost, jum
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}
 
-	jumpHostConn, err := dialer.Dial("tcp", fmt.Sprintf("%s:%d", jumpHost, 22))
+	jumpHostConn, err := setupProxyDialer(kubeconfigPath, namespace, 49152, 1080, jumpHost)
 	if err != nil {
 		log.Fatalf("Failed to dial jump host: %s", err)
 	}
