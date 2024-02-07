@@ -18,6 +18,8 @@ type InventoryGroup struct {
 		KubeconfigPath string `json:"kubeconfigPath,omitempty"`
 		Namespace      string `json:"namespace,omitempty"`
 		Service        string `json:"service,omitempty"`
+		ServicePort    int    `json:"servicePort,omitempty"`
+		LocalPort      int    `json:"localPort,omitempty"`
 	} `json:"kubeJumpHostConfig,omitempty"`
 	Hosts []Host `json:"hosts"`
 }

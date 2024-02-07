@@ -9,7 +9,9 @@
         "kubeJumpHostConfig": {
             "kubeconfigPath": "/home/nik/.kube/config_local",
             "namespace": "dante",
-            "service": "dante"
+            "service": "dante",
+            "servicePort": 1080,
+            "localPort": 49152
         },
         "hosts": [
             {
@@ -30,7 +32,9 @@
         "kubeJumpHostConfig": {
             "kubeconfigPath": "/home/nik/.kube/config_local",
             "namespace": "dante",
-            "service": "dante"
+            "service": "dante",
+            "servicePort": 1080,
+            "localPort": 49152
         },
         "hosts": [
             {
@@ -51,7 +55,9 @@
         "kubeJumpHostConfig": {
             "kubeconfigPath": "/home/nik/.kube/config_local",
             "namespace": "dante",
-            "service": "dante"
+            "service": "dante",
+            "servicePort": 1080,
+            "localPort": 49152
         },
         "hosts": [
             {
@@ -72,7 +78,9 @@
         "kubeJumpHostConfig": {
             "kubeconfigPath": "/home/nik/.kube/config_local",
             "namespace": "dante",
-            "service": "dante"
+            "service": "dante",
+            "servicePort": 1080,
+            "localPort": 49152
         },
         "hosts": [
             {

@@ -85,13 +85,17 @@ func setHostSelected(list *tview.List, hosts []Host, app *tview.Application, inv
 					kubeconfig := inventoryGroups[inventoryIndex].KubeJumpHostConfig.KubeconfigPath
 					namespace := inventoryGroups[inventoryIndex].KubeJumpHostConfig.Namespace
 					svc := inventoryGroups[inventoryIndex].KubeJumpHostConfig.Service
-					executeSSHKubeJumpCommand(kubeconfig, namespace, svc, jumpHost, jumpHostUsername, jumpHostPassword, host.Username, host.Password, host.Hostname)
+					servicePort := inventoryGroups[inventoryIndex].KubeJumpHostConfig.ServicePort
+					localPort := inventoryGroups[inventoryIndex].KubeJumpHostConfig.LocalPort
+					executeSSHKubeJumpCommand(kubeconfig, namespace, svc, servicePort, localPort, jumpHost, jumpHostUsername, jumpHostPassword, host.Username, host.Password, host.Hostname)
 				case 2: // Kube
 					app.Stop()
 					kubeconfig := inventoryGroups[inventoryIndex].KubeJumpHostConfig.KubeconfigPath
 					namespace := inventoryGroups[inventoryIndex].KubeJumpHostConfig.Namespace
 					svc := inventoryGroups[inventoryIndex].KubeJumpHostConfig.Service
-					executeSSHKubeCommand(kubeconfig, namespace, svc, host.Username, host.Password, host.Hostname)
+					servicePort := inventoryGroups[inventoryIndex].KubeJumpHostConfig.ServicePort
+					localPort := inventoryGroups[inventoryIndex].KubeJumpHostConfig.LocalPort
+					executeSSHKubeCommand(kubeconfig, namespace, svc, servicePort, localPort, host.Username, host.Password, host.Hostname)
 				case 3: // Jump
 					app.Stop()
 					jumpHost := inventoryGroups[inventoryIndex].JumpHostConfig.Hostname

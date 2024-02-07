@@ -34,14 +34,14 @@ func waitForPortOpen(port int, timeout time.Duration) bool {
 	return false
 }
 
-func startPortForwarding(kubeconfigPath, namespace, svc string, localPort int, targetPort int) (*exec.Cmd, error) {
+func startPortForwarding(kubeconfigPath, namespace, svc string, servicePort int, localPort int) (*exec.Cmd, error) {
 	if isPortOpen(localPort) {
 		log.Printf("Local port %d is already open. Using the existing forwarding...\n", localPort)
 		return nil, nil
 	}
 
 	log.Println("Starting port forwarding...")
-	portForwardCmd := exec.Command("kubectl", "port-forward", "svc/"+svc, fmt.Sprintf("%d:%d", localPort, targetPort), "-n", namespace, "--kubeconfig", kubeconfigPath)
+	portForwardCmd := exec.Command("kubectl", "port-forward", "svc/"+svc, fmt.Sprintf("%d:%d", localPort, servicePort), "-n", namespace, "--kubeconfig", kubeconfigPath)
 	portForwardCmd.Stderr = os.Stderr
 
 	if err := portForwardCmd.Start(); err != nil {

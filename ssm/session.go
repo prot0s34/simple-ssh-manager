@@ -90,9 +90,9 @@ func executeSSHJumpCommand(jumpUsername, jumpPassword, jumpHost, targetUsername,
 	}
 }
 
-func executeSSHKubeCommand(kubeconfigPath, namespace, svc, targetUsername, targetPassword, targetHost string) {
+func executeSSHKubeCommand(kubeconfigPath string, namespace string, svc string, servicePort int, localPort int, targetUsername string, targetPassword string, targetHost string) {
 
-	portForwardCmd, err := startPortForwarding(kubeconfigPath, namespace, svc, 49152, 1080)
+	portForwardCmd, err := startPortForwarding(kubeconfigPath, namespace, svc, servicePort, localPort)
 	if err != nil {
 		log.Fatalf("Error starting port forwarding: %v", err)
 	}
@@ -129,9 +129,9 @@ func executeSSHKubeCommand(kubeconfigPath, namespace, svc, targetUsername, targe
 	}
 }
 
-func executeSSHKubeJumpCommand(kubeconfigPath, namespace, svc, jumpHost, jumpUsername, jumpPassword, targetUsername, targetPassword, targetHost string) {
+func executeSSHKubeJumpCommand(kubeconfigPath string, namespace string, svc string, servicePort int, localPort int, jumpHost, jumpUsername, jumpPassword, targetUsername, targetPassword, targetHost string) {
 
-	portForwardCmd, err := startPortForwarding(kubeconfigPath, namespace, svc, 49152, 1080)
+	portForwardCmd, err := startPortForwarding(kubeconfigPath, namespace, svc, servicePort, localPort)
 	if err != nil {
 		log.Fatalf("Error starting port forwarding: %v", err)
 	}
