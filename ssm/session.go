@@ -120,9 +120,12 @@ func executeSSHKubeCommand(kubeconfigPath, namespace, podName, targetUsername, t
 			}
 			log.Println("Port forwarding terminated.")
 		}()
-	}
 
-	time.Sleep(2 * time.Second)
+		log.Println("Waiting for port forwarding to establish...")
+		if !waitForPortOpen(localPort, 10*time.Second) {
+			log.Fatalf("Timeout reached, port %d did not open", localPort)
+		}
+	}
 
 	log.Println("Creating SOCKS5 dialer...")
 	dialer, err := proxy.SOCKS5("tcp", fmt.Sprintf("localhost:%d", localPort), nil, proxy.Direct)
@@ -187,9 +190,12 @@ func executeSSHKubeJumpCommand(kubeconfigPath, namespace, podName, jumpHost, jum
 			}
 			log.Println("Port forwarding terminated.")
 		}()
-	}
 
-	time.Sleep(2 * time.Second)
+		log.Println("Waiting for port forwarding to establish...")
+		if !waitForPortOpen(localPort, 10*time.Second) {
+			log.Fatalf("Timeout reached, port %d did not open", localPort)
+		}
+	}
 
 	log.Println("Creating SOCKS5 dialer...")
 	dialer, err := proxy.SOCKS5("tcp", fmt.Sprintf("localhost:%d", localPort), nil, proxy.Direct)
