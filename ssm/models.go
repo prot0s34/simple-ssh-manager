@@ -15,10 +15,9 @@ type InventoryGroup struct {
 		Password string `json:"password,omitempty"`
 	}
 	KubeJumpHostConfig struct {
-		KubeconfigPath  string `json:"kubeconfigPath,omitempty"`
-		PodName         string `json:"podName,omitempty"`
-		Namespace       string `json:"namespace,omitempty"`
-		PodNameTemplate string `json:"podNameTemplate,omitempty"`
+		KubeconfigPath string `json:"kubeconfigPath,omitempty"`
+		Namespace      string `json:"namespace,omitempty"`
+		Service        string `json:"service,omitempty"`
 	} `json:"kubeJumpHostConfig,omitempty"`
 	Hosts []Host `json:"hosts"`
 }

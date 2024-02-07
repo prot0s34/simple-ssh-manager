@@ -90,11 +90,17 @@ func executeSSHJumpCommand(jumpUsername, jumpPassword, jumpHost, targetUsername,
 	}
 }
 
-func executeSSHKubeCommand(kubeconfigPath, namespace, podName, targetUsername, targetPassword, targetHost string) {
+func executeSSHKubeCommand(kubeconfigPath, namespace, svc, targetUsername, targetPassword, targetHost string) {
 
-	conn, err := setupProxyDialer(kubeconfigPath, namespace, 49152, 1080, targetHost)
+	portForwardCmd, err := startPortForwarding(kubeconfigPath, namespace, svc, 49152, 1080)
 	if err != nil {
-		log.Fatalf("Error setting up port forwarding and dialing: %v", err)
+		log.Fatalf("Error starting port forwarding: %v", err)
+	}
+	defer portForwardCmd.Process.Kill()
+
+	conn, err := setupProxyDialer(49152, targetHost)
+	if err != nil {
+		log.Fatalf("Error setting up proxy dialer: %v", err)
 	}
 
 	log.Println("Setting up SSH connection...")
@@ -123,9 +129,19 @@ func executeSSHKubeCommand(kubeconfigPath, namespace, podName, targetUsername, t
 	}
 }
 
-func executeSSHKubeJumpCommand(kubeconfigPath, namespace, podName, jumpHost, jumpUsername, jumpPassword, targetUsername, targetPassword, targetHost string) {
+func executeSSHKubeJumpCommand(kubeconfigPath, namespace, svc, jumpHost, jumpUsername, jumpPassword, targetUsername, targetPassword, targetHost string) {
 
-	log.Printf("Connecting to jump host %s...\n", jumpHost)
+	portForwardCmd, err := startPortForwarding(kubeconfigPath, namespace, svc, 49152, 1080)
+	if err != nil {
+		log.Fatalf("Error starting port forwarding: %v", err)
+	}
+	defer portForwardCmd.Process.Kill()
+
+	conn, err := setupProxyDialer(49152, targetHost)
+	if err != nil {
+		log.Fatalf("Error setting up proxy dialer: %v", err)
+	}
+
 	jumpHostConfig := &ssh.ClientConfig{
 		User: jumpUsername,
 		Auth: []ssh.AuthMethod{
@@ -134,12 +150,8 @@ func executeSSHKubeJumpCommand(kubeconfigPath, namespace, podName, jumpHost, jum
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}
 
-	jumpHostConn, err := setupProxyDialer(kubeconfigPath, namespace, 49152, 1080, jumpHost)
-	if err != nil {
-		log.Fatalf("Failed to dial jump host: %s", err)
-	}
-
-	jumpHostSSHConn, chans, reqs, err := ssh.NewClientConn(jumpHostConn, jumpHost, jumpHostConfig)
+	log.Printf("Connecting to jump host %s...\n", jumpHost)
+	jumpHostSSHConn, chans, reqs, err := ssh.NewClientConn(conn, jumpHost, jumpHostConfig)
 	if err != nil {
 		log.Fatalf("Failed to establish SSH connection to jump host: %s", err)
 	}

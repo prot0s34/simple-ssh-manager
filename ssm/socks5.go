@@ -34,33 +34,30 @@ func waitForPortOpen(port int, timeout time.Duration) bool {
 	return false
 }
 
-func setupProxyDialer(kubeconfigPath, namespace string, localPort, targetPort int, targetHost string) (net.Conn, error) {
+func startPortForwarding(kubeconfigPath, namespace, svc string, localPort int, targetPort int) (*exec.Cmd, error) {
 	if isPortOpen(localPort) {
-		log.Printf("Local port %d is already open. Attempting to use the existing forwarding...\n", localPort)
-	} else {
-		log.Println("Starting port forwarding...")
-		portForwardCmd := exec.Command("kubectl", "port-forward", "svc/dante", fmt.Sprintf("%d:%d", localPort, targetPort), "-n", namespace, "--kubeconfig", kubeconfigPath)
-		portForwardCmd.Stderr = os.Stderr
-
-		if err := portForwardCmd.Start(); err != nil {
-			return nil, fmt.Errorf("failed to start port-forwarding: %w", err)
-		}
-		log.Println("Port forwarding started.")
-
-		defer func() {
-			log.Println("Terminating port forwarding...")
-			if err := portForwardCmd.Process.Kill(); err != nil {
-				log.Printf("Failed to kill port-forwarding process: %s", err)
-			}
-			log.Println("Port forwarding terminated.")
-		}()
-
-		log.Println("Waiting for port forwarding to establish...")
-		if !waitForPortOpen(localPort, 10*time.Second) {
-			return nil, fmt.Errorf("timeout reached, port %d did not open", localPort)
-		}
+		log.Printf("Local port %d is already open. Using the existing forwarding...\n", localPort)
+		return nil, nil
 	}
 
+	log.Println("Starting port forwarding...")
+	portForwardCmd := exec.Command("kubectl", "port-forward", "svc/"+svc, fmt.Sprintf("%d:%d", localPort, targetPort), "-n", namespace, "--kubeconfig", kubeconfigPath)
+	portForwardCmd.Stderr = os.Stderr
+
+	if err := portForwardCmd.Start(); err != nil {
+		return nil, fmt.Errorf("failed to start port-forwarding: %w", err)
+	}
+	log.Println("Port forwarding started.")
+
+	if !waitForPortOpen(localPort, 10*time.Second) {
+		portForwardCmd.Process.Kill()
+		return nil, fmt.Errorf("timeout reached, port %d did not open", localPort)
+	}
+
+	return portForwardCmd, nil
+}
+
+func setupProxyDialer(localPort int, targetHost string) (net.Conn, error) {
 	log.Println("Creating SOCKS5 dialer...")
 	dialer, err := proxy.SOCKS5("tcp", fmt.Sprintf("localhost:%d", localPort), nil, proxy.Direct)
 	if err != nil {

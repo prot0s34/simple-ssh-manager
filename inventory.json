@@ -8,9 +8,8 @@
         },
         "kubeJumpHostConfig": {
             "kubeconfigPath": "/home/nik/.kube/config_local",
-            "podName": "",
-            "namespace": "default",
-            "podNameTemplate": "zsh-"
+            "namespace": "dante",
+            "service": "dante"
         },
         "hosts": [
             {
@@ -30,9 +29,8 @@
         },
         "kubeJumpHostConfig": {
             "kubeconfigPath": "/home/nik/.kube/config_local",
-            "podName": "",
-            "namespace": "default",
-            "podNameTemplate": "zsh-"
+            "namespace": "dante",
+            "service": "dante"
         },
         "hosts": [
             {
@@ -52,9 +50,8 @@
         },
         "kubeJumpHostConfig": {
             "kubeconfigPath": "/home/nik/.kube/config_local",
-            "podName": "",
-            "namespace": "default",
-            "podNameTemplate": "zsh-"
+            "namespace": "dante",
+            "service": "dante"
         },
         "hosts": [
             {
@@ -74,9 +71,8 @@
         },
         "kubeJumpHostConfig": {
             "kubeconfigPath": "/home/nik/.kube/config_local",
-            "podName": "",
-            "namespace": "default",
-            "podNameTemplate": "zsh-"
+            "namespace": "dante",
+            "service": "dante"
         },
         "hosts": [
             {

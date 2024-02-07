@@ -12,8 +12,8 @@
 
 <p>Terminal based SSH connections manager</p>
 <p>Allow you create multiply "inventory" host lists and connect into target host with few key motions</p>
-<p>You can connect to target host using several "hop" options - via regular jumphost, kubernetes pod as proxy, kubernetes pod + jumphost as proxy, direct connection</p>
-<p>For using k8s pod as proxy - you need to install SOCKS5 pod in your cluster </p>
+<p>You can connect to target host using several "hop" options - via regular jumphost, kubernetes service (with SOCKS5 proxy), kubernetes service(with SOCKS5 proxy) + jumphost as proxy, direct connection</p>
+<p>For using k8s service as proxy - you need to install SOCKS5 pod in your cluster and create service for it. See, for example, [dante](https://www.inet.no/dante/)</p>
 <p>Currently it support only password-based auth (btw crypto/ssh used, BUT passwords in inventory stored as plaintext, keep in mind)</p>
 <p>Written in Go with <a href=https://github.com/rivo/tview> rivo/tview</a> and <a href=https://github.com/kubernetes/client-go>kubernetes/client-go</a> </p>
 
@@ -27,21 +27,20 @@
 - support multiply hosts groups (lists) in one inventory file
 - support separate jumphost and kubejumphost configs for each hosts group
 - inventory should be in /home/$user/inventory.json or defined in ENV SSHMANAGER_INVENTORY=/path/to/inventory.json
-- regular host, kubernetes pod or both (kubernetes -> jumphost -> targethost) can be used as jump option
+- regular host, kubernetes SOCKS5 proxy service or both (kubernetes -> jumphost -> targethost) can be used as jump option
 
 ### 🔌 Jumphost options:
 - **None** - localhost -> targethost
-- **Kube❯Jump** - localhost -> kubernetes pod -> jumphost -> targethost
-- **Kube** - localhost -> kubernetes pod -> targethost
+- **Kube❯Jump** - localhost -> kubernetes SOCKS5 service -> jumphost -> targethost
+- **Kube** - localhost -> kubernetes SOCKS5 service -> targethost
 - **Jump** - localhost -> jumphost -> targethost
 
 ### 🔧 Configuration:
 ```
-🚢 Kubernetes Pod as Jumphost:
+🚢 Kubernetes SOCKS5 service as Jumphost:
 - kubeJumpHostConfig.kubeconfigPath - path to kubeconfig file (default: ~/.kube/config)
-- kubeJumpHostConfig.namespace - namespace of pod (used "default" if not defined)
-- kubeJumpHostConfig.podName - name of pod. If podName not defined, podNameTemplate will be used for pod search (for generic pod name)
-- kubeJumpHostConfig.podNameTemplate - template for pod name search
+- kubeJumpHostConfig.namespace - namespace of service
+- kubeJumpHostConfig.service - name of service with SOCKS5 proxy. 
 
 🔗 Jumphost - config:
 - JumpHostConfig.username - username for jumphost
@@ -58,40 +57,42 @@ chmod +x /usr/local/bin/sshmanager
 ```
 
 ### ✅ TODO - Features:
-- [ ] additional packaging?
 - [x] kubectl jumphost functional
 - [x] kubectl+bastion jumphost functional
 - [x] bastion(single regular host) jumphost functional
 - [x] multiply lists support
 - [x] ~use 1 inventory with two lists intead of separate inventory files~
-- [ ] cover code with more error handling
-- [ ] use only fist pod name if search with template
-- [ ] add ssh key-based auth support
-- [ ] exclude "legend" information to bottom panel
-- [ ] use tmux inside of app window instead of current behavior (close app->exec ssh in default terminal)
 - [x] use crypto/ssh for connection instead of exec ssh
 - [x] refac exec ssh commands (use ssh config file instead of command line args?)
 - [x] ssh command builder?
 - [x] make release?
 - [x] make CI/Actions?
 - [x] add binary release to CI/Actions
-- [ ] add tagging at pull requests to CI/Actions
-- [ ] refac Hosts struct and optimize struct pass and use
 - [x] add echo "connected to $hostname" on each jumphost on the way to target host
 - [x] add 'no strict host checking' for kube+jump option
-- [ ] add kube context to inventory and kube functions 
 - [x] cleanup binary from git history
 - [x] ~wtf 50M binary~, shrinked to 31MB, need to drop/replace go-client for kubernetes for more lightweight binary :(
+- [x] reuse socks5 for multiply connections
+- [ ] add option for creating local proxy for :DistantConnect sessions?
+- [ ] additional packaging?
+- [ ] cover code with more error handling
+- [ ] add ssh key-based auth support
+- [ ] exclude "legend" information to bottom panel
+- [ ] use tmux inside of app window instead of current behavior (close app->exec ssh in default terminal)
+- [ ] add tagging at pull requests to CI/Actions
+- [ ] refac Hosts struct and optimize struct pass and use
+- [ ] add kube context to inventory and kube functions 
 - [ ] yaml inventory?
 - [ ] vim-like command mode for :q and :/ ? 
 - [ ] encrypt inventory? fetch passwords from bitwarden?
-- [ ] reuse socks5 for multiply connections
-- [ ] add option for creating local proxy for :DistantConnect sessions?
+- [ ] make default service namespace fallback
+- [ ] make logging more cute and compact 
 
 ### ⚠️ TO FIX:
 - "Recovered from panic: runtime error: index out of range [n] with length n" after quit app with 'q' (meanwhile, signal from ctrl+c handled correctly)
 
 ### ⛽ Changelog:
+- 2024.02.07 refactoring connection func, change pod port-forwarding to service port-forwarding
 - 2024.02.06 huge refactoring of ssh connections (sshpass bye-bye, welcome crypto/ssh lib) and implementing SOCKS5 k8s proxy with port-forwarding
 - 2024.01.28 v0.1.12 add minor improvments (as print connstring), refactoring, ssh args structure, binary size optimization, and so on.
 - 2023.10.29 add binary release to CI/Actions

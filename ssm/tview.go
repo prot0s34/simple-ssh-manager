@@ -79,27 +79,19 @@ func setHostSelected(list *tview.List, hosts []Host, app *tview.Application, inv
 					executeSSHCommand(host.Username, host.Password, host.Hostname)
 				case 1: // Kube + Jump
 					app.Stop()
-					podName, err := findJumpPod(inventoryGroups, inventoryIndex)
-					if err != nil {
-						fmt.Println(err)
-						os.Exit(1)
-					}
 					jumpHost := inventoryGroups[inventoryIndex].JumpHostConfig.Hostname
 					jumpHostUsername := inventoryGroups[inventoryIndex].JumpHostConfig.Username
 					jumpHostPassword := inventoryGroups[inventoryIndex].JumpHostConfig.Password
 					kubeconfig := inventoryGroups[inventoryIndex].KubeJumpHostConfig.KubeconfigPath
 					namespace := inventoryGroups[inventoryIndex].KubeJumpHostConfig.Namespace
-					executeSSHKubeJumpCommand(kubeconfig, namespace, podName, jumpHost, jumpHostUsername, jumpHostPassword, host.Username, host.Password, host.Hostname)
+					svc := inventoryGroups[inventoryIndex].KubeJumpHostConfig.Service
+					executeSSHKubeJumpCommand(kubeconfig, namespace, svc, jumpHost, jumpHostUsername, jumpHostPassword, host.Username, host.Password, host.Hostname)
 				case 2: // Kube
 					app.Stop()
-					podName, err := findJumpPod(inventoryGroups, inventoryIndex)
-					if err != nil {
-						fmt.Println(err)
-						os.Exit(1)
-					}
 					kubeconfig := inventoryGroups[inventoryIndex].KubeJumpHostConfig.KubeconfigPath
 					namespace := inventoryGroups[inventoryIndex].KubeJumpHostConfig.Namespace
-					executeSSHKubeCommand(kubeconfig, namespace, podName, host.Username, host.Password, host.Hostname)
+					svc := inventoryGroups[inventoryIndex].KubeJumpHostConfig.Service
+					executeSSHKubeCommand(kubeconfig, namespace, svc, host.Username, host.Password, host.Hostname)
 				case 3: // Jump
 					app.Stop()
 					jumpHost := inventoryGroups[inventoryIndex].JumpHostConfig.Hostname
@@ -113,26 +105,4 @@ func setHostSelected(list *tview.List, hosts []Host, app *tview.Application, inv
 		app.SetRoot(dialog, true)
 		switchHostList(app, &inventoryIndex, inventoryGroups, list)
 	})
-}
-
-func findJumpPod(inventoryGroups []InventoryGroup, inventoryIndex int) (string, error) {
-	if inventoryGroups[inventoryIndex].KubeJumpHostConfig.KubeconfigPath == "" {
-		return "", fmt.Errorf("error[initializeKubeJumpHostConfig]: KubeconfigPath is missing in the inventory")
-	}
-
-	clientset, err := initKubernetesClient(inventoryGroups[inventoryIndex].KubeJumpHostConfig.KubeconfigPath)
-	if err != nil {
-		return "", fmt.Errorf("error[initializeKubeJumpHostConfig]: initializing Kubernetes client: %v", err)
-	}
-
-	podName := inventoryGroups[inventoryIndex].KubeJumpHostConfig.PodName
-	if podName == "" {
-		podName, err = findPodByKeyword(clientset, inventoryGroups[inventoryIndex].KubeJumpHostConfig.Namespace, inventoryGroups[inventoryIndex].KubeJumpHostConfig.PodNameTemplate)
-		if err != nil {
-			return "", fmt.Errorf("error[initializeKubeJumpHostConfig]: %v", err)
-		}
-		inventoryGroups[inventoryIndex].KubeJumpHostConfig.PodName = podName
-	}
-
-	return podName, nil
 }
