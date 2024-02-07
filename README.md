@@ -86,6 +86,7 @@ chmod +x /usr/local/bin/sshmanager
 - [ ] vim-like command mode for :q and :/ ? 
 - [ ] encrypt inventory? fetch passwords from bitwarden?
 - [ ] reuse socks5 for multiply connections
+- [ ] add option for creating local proxy for :DistantConnect sessions?
 
 ### ⚠️ TO FIX:
 - "Recovered from panic: runtime error: index out of range [n] with length n" after quit app with 'q' (meanwhile, signal from ctrl+c handled correctly)
