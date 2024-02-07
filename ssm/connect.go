@@ -54,8 +54,12 @@ func executeSSHCommand(username, password, hostname string) {
 	session.Stderr = os.Stderr
 	session.Stdin = os.Stdin
 
+	width, height, err := term.GetSize(int(os.Stdout.Fd()))
+	if err != nil {
+		log.Fatalf("Failed to get terminal size: %s", err)
+	}
 	log.Println("Requesting pseudo terminal...")
-	if err := session.RequestPty("xterm", 40, 80, ssh.TerminalModes{
+	if err := session.RequestPty("xterm", height, width, ssh.TerminalModes{
 		ssh.ECHO:          1,
 		ssh.TTY_OP_ISPEED: 14400,
 		ssh.TTY_OP_OSPEED: 14400,
@@ -141,8 +145,13 @@ func executeSSHJumpCommand(jumpUsername, jumpPassword, jumpHost, targetUsername,
 	session.Stderr = os.Stderr
 	session.Stdin = os.Stdin
 
+	width, height, err := term.GetSize(int(os.Stdout.Fd()))
+	if err != nil {
+		log.Fatalf("Failed to get terminal size: %s", err)
+	}
+
 	log.Println("Requesting pseudo terminal on target host...")
-	if err := session.RequestPty("xterm", 40, 80, ssh.TerminalModes{
+	if err := session.RequestPty("xterm", height, width, ssh.TerminalModes{
 		ssh.ECHO:          1,
 		ssh.TTY_OP_ISPEED: 14400,
 		ssh.TTY_OP_OSPEED: 14400,
@@ -238,7 +247,12 @@ func executeSSHKubeCommand(kubeconfigPath, namespace, podName, targetUsername, t
 	session.Stdout = os.Stdout
 	session.Stderr = os.Stderr
 
-	if err := session.RequestPty("xterm", 40, 80, ssh.TerminalModes{
+	width, height, err := term.GetSize(int(os.Stdout.Fd()))
+	if err != nil {
+		log.Fatalf("Failed to get terminal size: %s", err)
+	}
+
+	if err := session.RequestPty("xterm", height, width, ssh.TerminalModes{
 		ssh.ECHO:          1,
 		ssh.TTY_OP_ISPEED: 14400,
 		ssh.TTY_OP_OSPEED: 14400,
@@ -349,7 +363,12 @@ func executeSSHKubeJumpCommand(kubeconfigPath, namespace, podName, jumpHost, jum
 	session.Stdout = os.Stdout
 	session.Stderr = os.Stderr
 
-	if err := session.RequestPty("xterm", 40, 80, ssh.TerminalModes{
+	width, height, err := term.GetSize(int(os.Stdout.Fd()))
+	if err != nil {
+		log.Fatalf("Failed to get terminal size: %s", err)
+	}
+
+	if err := session.RequestPty("xterm", height, width, ssh.TerminalModes{
 		ssh.ECHO:          1,
 		ssh.TTY_OP_ISPEED: 14400,
 		ssh.TTY_OP_OSPEED: 14400,
