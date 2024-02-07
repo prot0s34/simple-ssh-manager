@@ -4,27 +4,26 @@ import (
 	"fmt"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/net/proxy"
-	"golang.org/x/term"
 	"log"
 	"os"
 	"os/exec"
 	"time"
 )
 
-func executeSSHCommand(username, password, hostname string) {
-	log.Printf("Configuring SSH client for %s...\n", hostname)
+func executeSSHCommand(targetUsername, targetPassword, targetHost string) {
+	log.Printf("Configuring SSH client for %s...\n", targetHost)
 
 	config := &ssh.ClientConfig{
-		User: username,
+		User: targetUsername,
 		Auth: []ssh.AuthMethod{
-			ssh.Password(password),
+			ssh.Password(targetPassword),
 		},
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}
 
-	log.Printf("Connecting to SSH server %s...\n", hostname)
+	log.Printf("Connecting to SSH server %s...\n", targetHost)
 
-	client, err := ssh.Dial("tcp", hostname+":22", config)
+	client, err := ssh.Dial("tcp", targetHost+":22", config)
 	if err != nil {
 		log.Fatalf("Failed to dial: %s", err)
 	}
@@ -40,50 +39,9 @@ func executeSSHCommand(username, password, hostname string) {
 	defer session.Close()
 	log.Println("SSH session created.")
 
-	oldState, err := term.MakeRaw(int(os.Stdin.Fd()))
+	err = handleShell(session)
 	if err != nil {
-		log.Fatalf("Failed to set terminal to raw mode: %s", err)
-	}
-	defer func() {
-		if err := term.Restore(int(os.Stdin.Fd()), oldState); err != nil {
-			log.Fatalf("Failed to restore terminal: %s", err)
-		}
-	}()
-
-	session.Stdout = os.Stdout
-	session.Stderr = os.Stderr
-	session.Stdin = os.Stdin
-
-	width, height, err := term.GetSize(int(os.Stdout.Fd()))
-	if err != nil {
-		log.Fatalf("Failed to get terminal size: %s", err)
-	}
-	log.Println("Requesting pseudo terminal...")
-	if err := session.RequestPty("xterm", height, width, ssh.TerminalModes{
-		ssh.ECHO:          1,
-		ssh.TTY_OP_ISPEED: 14400,
-		ssh.TTY_OP_OSPEED: 14400,
-	}); err != nil {
-		log.Fatalf("Failed to request pseudo terminal: %s", err)
-	}
-
-	log.Println("Starting shell...")
-
-	if err := session.Shell(); err != nil {
-		log.Fatalf("Failed to start shell: %s", err)
-	}
-
-	log.Println("Waiting for SSH session to finish...")
-	if err := session.Wait(); err != nil {
-		if exitErr, ok := err.(*ssh.ExitError); ok {
-			if exitErr.ExitStatus() == 0 {
-				log.Println("SSH session finished successfully.")
-			} else {
-				log.Printf("SSH session exited with non-zero status: %d\n", exitErr.ExitStatus())
-			}
-		} else {
-			log.Fatalf("Failed to wait for session completion: %s", err)
-		}
+		log.Fatalf("%v", err)
 	}
 }
 
@@ -127,54 +85,15 @@ func executeSSHJumpCommand(jumpUsername, jumpPassword, jumpHost, targetUsername,
 
 	targetClient := ssh.NewClient(ncc, chans, reqs)
 	session, err := targetClient.NewSession()
+
 	if err != nil {
 		log.Fatalf("Failed to create session on target host: %s", err)
 	}
 	defer session.Close()
-	log.Println("SSH session to target host established.")
-	oldState, err := term.MakeRaw(int(os.Stdin.Fd()))
+
+	err = handleShell(session)
 	if err != nil {
-		log.Fatalf("Failed to set terminal to raw mode: %s", err)
-	}
-	defer func() {
-		if err := term.Restore(int(os.Stdin.Fd()), oldState); err != nil {
-			log.Fatalf("Failed to restore terminal: %s", err)
-		}
-	}()
-	session.Stdout = os.Stdout
-	session.Stderr = os.Stderr
-	session.Stdin = os.Stdin
-
-	width, height, err := term.GetSize(int(os.Stdout.Fd()))
-	if err != nil {
-		log.Fatalf("Failed to get terminal size: %s", err)
-	}
-
-	log.Println("Requesting pseudo terminal on target host...")
-	if err := session.RequestPty("xterm", height, width, ssh.TerminalModes{
-		ssh.ECHO:          1,
-		ssh.TTY_OP_ISPEED: 14400,
-		ssh.TTY_OP_OSPEED: 14400,
-	}); err != nil {
-		log.Fatalf("Failed to request pseudo terminal on target host: %s", err)
-	}
-
-	log.Println("Starting shell on target host...")
-	if err := session.Shell(); err != nil {
-		log.Fatalf("Failed to start shell on target host: %s", err)
-	}
-
-	log.Println("Waiting for the session on target host to finish...")
-	if err := session.Wait(); err != nil {
-		if exitErr, ok := err.(*ssh.ExitError); ok {
-			if exitErr.ExitStatus() == 0 {
-				log.Println("Session on target host finished successfully.")
-			} else {
-				log.Printf("SSH session on target host exited with non-zero status: %d\n", exitErr.ExitStatus())
-			}
-		} else {
-			log.Fatalf("Failed to wait for session completion on target host: %s", err)
-		}
+		log.Fatalf("%v", err)
 	}
 }
 
@@ -234,43 +153,14 @@ func executeSSHKubeCommand(kubeconfigPath, namespace, podName, targetUsername, t
 		log.Fatalf("Failed to create session: %s", err)
 	}
 	defer session.Close()
-	oldState, err := term.MakeRaw(int(os.Stdin.Fd()))
+
+	err = handleShell(session)
 	if err != nil {
-		log.Fatalf("Failed to set terminal to raw mode: %s", err)
-	}
-	defer func() {
-		if err := term.Restore(int(os.Stdin.Fd()), oldState); err != nil {
-			log.Fatalf("Failed to restore terminal: %s", err)
-		}
-	}()
-	session.Stdin = os.Stdin
-	session.Stdout = os.Stdout
-	session.Stderr = os.Stderr
-
-	width, height, err := term.GetSize(int(os.Stdout.Fd()))
-	if err != nil {
-		log.Fatalf("Failed to get terminal size: %s", err)
-	}
-
-	if err := session.RequestPty("xterm", height, width, ssh.TerminalModes{
-		ssh.ECHO:          1,
-		ssh.TTY_OP_ISPEED: 14400,
-		ssh.TTY_OP_OSPEED: 14400,
-	}); err != nil {
-		log.Fatalf("Failed to request pseudo terminal: %s", err)
-	}
-
-	if err := session.Shell(); err != nil {
-		log.Fatalf("Failed to start shell: %s", err)
-	}
-	log.Println("Shell started.")
-
-	if err := session.Wait(); err != nil {
-		log.Printf("SSH session finished with error: %s", err)
+		log.Fatalf("%v", err)
 	}
 }
 
-func executeSSHKubeJumpCommand(kubeconfigPath, namespace, podName, jumpHost, jumpHostUser, jumpHostPass, targetUsername, targetPassword, targetHost string) {
+func executeSSHKubeJumpCommand(kubeconfigPath, namespace, podName, jumpHost, jumpUsername, jumpPassword, targetUsername, targetPassword, targetHost string) {
 	localPort := 49152
 	targetPort := 1080
 
@@ -304,9 +194,9 @@ func executeSSHKubeJumpCommand(kubeconfigPath, namespace, podName, jumpHost, jum
 
 	log.Printf("Connecting to jump host %s...\n", jumpHost)
 	jumpHostConfig := &ssh.ClientConfig{
-		User: jumpHostUser,
+		User: jumpUsername,
 		Auth: []ssh.AuthMethod{
-			ssh.Password(jumpHostPass),
+			ssh.Password(jumpPassword),
 		},
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}
@@ -350,38 +240,9 @@ func executeSSHKubeJumpCommand(kubeconfigPath, namespace, podName, jumpHost, jum
 		log.Fatalf("Failed to create session on target host: %s", err)
 	}
 	defer session.Close()
-	oldState, err := term.MakeRaw(int(os.Stdin.Fd()))
+
+	err = handleShell(session)
 	if err != nil {
-		log.Fatalf("Failed to set terminal to raw mode: %s", err)
-	}
-	defer func() {
-		if err := term.Restore(int(os.Stdin.Fd()), oldState); err != nil {
-			log.Fatalf("Failed to restore terminal: %s", err)
-		}
-	}()
-	session.Stdin = os.Stdin
-	session.Stdout = os.Stdout
-	session.Stderr = os.Stderr
-
-	width, height, err := term.GetSize(int(os.Stdout.Fd()))
-	if err != nil {
-		log.Fatalf("Failed to get terminal size: %s", err)
-	}
-
-	if err := session.RequestPty("xterm", height, width, ssh.TerminalModes{
-		ssh.ECHO:          1,
-		ssh.TTY_OP_ISPEED: 14400,
-		ssh.TTY_OP_OSPEED: 14400,
-	}); err != nil {
-		log.Fatalf("Failed to request pseudo terminal on target host: %s", err)
-	}
-
-	if err := session.Shell(); err != nil {
-		log.Fatalf("Failed to start shell on target host: %s", err)
-	}
-	log.Println("Shell started on target host.")
-
-	if err := session.Wait(); err != nil {
-		log.Printf("SSH session on target host finished with error: %s", err)
+		log.Fatalf("%v", err)
 	}
 }
