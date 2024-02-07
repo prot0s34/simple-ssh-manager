@@ -85,6 +85,7 @@ chmod +x /usr/local/bin/sshmanager
 - [ ] yaml inventory?
 - [ ] vim-like command mode for :q and :/ ? 
 - [ ] encrypt inventory? fetch passwords from bitwarden?
+- [ ] reuse socks5 for multiply connections
 
 ### ⚠️ TO FIX:
 - "Recovered from panic: runtime error: index out of range [n] with length n" after quit app with 'q' (meanwhile, signal from ctrl+c handled correctly)
