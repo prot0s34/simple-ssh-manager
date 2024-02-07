@@ -84,6 +84,7 @@ chmod +x /usr/local/bin/sshmanager
 - [x] ~wtf 50M binary~, shrinked to 31MB, need to drop/replace go-client for kubernetes for more lightweight binary :(
 - [ ] yaml inventory?
 - [ ] vim-like command mode for :q and :/ ? 
+- [ ] encrypt inventory? fetch passwords from bitwarden?
 
 ### ⚠️ TO FIX:
 - "Recovered from panic: runtime error: index out of range [n] with length n" after quit app with 'q' (meanwhile, signal from ctrl+c handled correctly)
