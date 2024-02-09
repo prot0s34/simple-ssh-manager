@@ -1,9 +1,6 @@
 package main
 
 import (
-	"fmt"
-	"os"
-
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
@@ -60,10 +57,6 @@ func selectListItem(app *tview.Application, list *tview.List, ctx *AppContext) {
 		TargetHost := ctx.Inventory[*ctx.InventoryIndex].TargetHost[index]
 		JumpHost := ctx.Inventory[*ctx.InventoryIndex].JumpHost
 		KubeJumpHost := ctx.Inventory[*ctx.InventoryIndex].KubeJumpHost
-		if TargetHost.Username == "" {
-			fmt.Println("Error: Host username is missing in the inventory.")
-			os.Exit(1)
-		}
 		showModalOnListItem(app, list, ctx, TargetHost, JumpHost, KubeJumpHost)
 	})
 }

@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"log"
 	"os"
 	"os/user"
 )
@@ -27,5 +28,10 @@ func loadInventoryGroups() ([]InventoryGroup, error) {
 		return nil, err
 	}
 
+	for _, ig := range inventoryGroups {
+		if err := ig.Validate(); err != nil {
+			log.Fatalf("Validation error in inventory group '%s': %v\nPlease check your inventory file: %s", ig.Name, err, inventoryPath)
+		}
+	}
 	return inventoryGroups, nil
 }
