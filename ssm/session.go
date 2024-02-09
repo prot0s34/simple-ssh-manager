@@ -96,9 +96,11 @@ func executeSSHKubeCommand(kubeconfigPath string, namespace string, svc string, 
 	if err != nil {
 		log.Fatalf("Error starting port forwarding: %v", err)
 	}
-	defer portForwardCmd.Process.Kill()
+	if portForwardCmd != nil {
+		defer portForwardCmd.Process.Kill()
+	}
 
-	conn, err := setupProxyDialer(49152, targetHost)
+	conn, err := setupProxyDialer(localPort, targetHost)
 	if err != nil {
 		log.Fatalf("Error setting up proxy dialer: %v", err)
 	}
@@ -135,9 +137,11 @@ func executeSSHKubeJumpCommand(kubeconfigPath string, namespace string, svc stri
 	if err != nil {
 		log.Fatalf("Error starting port forwarding: %v", err)
 	}
-	defer portForwardCmd.Process.Kill()
+	if portForwardCmd != nil {
+		defer portForwardCmd.Process.Kill()
+	}
 
-	conn, err := setupProxyDialer(49152, targetHost)
+	conn, err := setupProxyDialer(localPort, targetHost)
 	if err != nil {
 		log.Fatalf("Error setting up proxy dialer: %v", err)
 	}

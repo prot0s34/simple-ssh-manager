@@ -15,7 +15,7 @@
 <p>You can connect to target host using several "hop" options - via regular jumphost, kubernetes service (with SOCKS5 proxy), kubernetes service(with SOCKS5 proxy) + jumphost as proxy, direct connection</p>
 <p>For using k8s service as proxy - you need to install SOCKS5 pod in your cluster and create service for it. See, for example, [dante](https://www.inet.no/dante/)</p>
 <p>Currently it support only password-based auth (btw crypto/ssh used, BUT passwords in inventory stored as plaintext, keep in mind)</p>
-<p>Written in Go with <a href=https://github.com/rivo/tview> rivo/tview</a> and <a href=https://github.com/kubernetes/client-go>kubernetes/client-go</a> </p>
+<p>Written in Go with <a href=https://github.com/rivo/tview> rivo/tview</a> </p>
 
 ### Preview:
 <p align="left">
@@ -81,6 +81,7 @@ chmod +x /usr/local/bin/sshmanager
 - [ ] use tmux inside of app window instead of current behavior (close app->exec ssh in default terminal)
 - [ ] add tagging at pull requests to CI/Actions
 - [ ] refac Hosts struct and optimize struct pass and use
+- [ ] proxy via <a href=https://github.com/kubernetes/client-go>kubernetes/client-go</a> instead kubectl?
 - [ ] add kube context to inventory and kube functions 
 - [ ] yaml inventory?
 - [ ] vim-like command mode for :q and :/ ? 

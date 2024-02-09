@@ -64,50 +64,53 @@ func selectListItem(app *tview.Application, list *tview.List, ctx *AppContext) {
 			fmt.Println("Error: Host username is missing in the inventory.")
 			os.Exit(1)
 		}
-
-		inModalDialog = true
-		dialog := tview.NewModal().
-			SetText("Choose a jumphost option for host: " + TargetHost.Name).
-			AddButtons([]string{"None", "Kube❯Jump", "Kube", "Jump", "Cancel"}).
-			SetDoneFunc(func(buttonIndex int, buttonLabel string) {
-				inModalDialog = false
-				switch buttonIndex {
-				case 0: // None
-					app.Stop()
-					executeSSHCommand(TargetHost.Username, TargetHost.Password, TargetHost.Hostname)
-				case 1: // Kube + Jump
-					app.Stop()
-					jumpHost := JumpHost.Hostname
-					jumpHostUsername := JumpHost.Username
-					jumpHostPassword := JumpHost.Password
-					kubeconfig := KubeJumpHost.KubeconfigPath
-					namespace := KubeJumpHost.Namespace
-					svc := KubeJumpHost.Service
-					servicePort := KubeJumpHost.ServicePort
-					localPort := KubeJumpHost.LocalPort
-					executeSSHKubeJumpCommand(kubeconfig, namespace, svc, servicePort, localPort, jumpHost, jumpHostUsername, jumpHostPassword, TargetHost.Username, TargetHost.Password, TargetHost.Hostname)
-				case 2: // Kube
-					app.Stop()
-					kubeconfig := KubeJumpHost.KubeconfigPath
-					namespace := KubeJumpHost.Namespace
-					svc := KubeJumpHost.Service
-					servicePort := KubeJumpHost.ServicePort
-					localPort := KubeJumpHost.LocalPort
-					executeSSHKubeCommand(kubeconfig, namespace, svc, servicePort, localPort, TargetHost.Username, TargetHost.Password, TargetHost.Hostname)
-				case 3: // Jump
-					// fix jump option behavior
-					app.Stop()
-					jumpHost := JumpHost.Hostname
-					// jumpHostUsername := inventory[inventoryIndex].JumpHost.Username
-					// jumpHostPassword := inventory[inventoryIndex].JumpHost.Password
-					executeSSHCommand(TargetHost.Username, JumpHost.Password, jumpHost)
-				case 4: // Cancel
-					inModalDialog = false
-					app.SetRoot(list, true)
-				}
-			})
-
-		app.SetRoot(dialog, true)
-		switchHostList(app, list, ctx)
+		showModalOnListItem(app, list, ctx, TargetHost, JumpHost, KubeJumpHost)
 	})
+}
+
+func showModalOnListItem(app *tview.Application, list *tview.List, ctx *AppContext, TargetHost TargetHost, JumpHost JumpHost, KubeJumpHost KubeJumpHost) {
+	inModalDialog = true
+	dialog := tview.NewModal().
+		SetText("Choose a jumphost option for host: " + TargetHost.Name).
+		AddButtons([]string{"None", "Kube❯Jump", "Kube", "Jump", "Cancel"}).
+		SetDoneFunc(func(buttonIndex int, buttonLabel string) {
+			inModalDialog = false
+			switch buttonIndex {
+			case 0: // None
+				app.Stop()
+				executeSSHCommand(TargetHost.Username, TargetHost.Password, TargetHost.Hostname)
+			case 1: // Kube + Jump
+				app.Stop()
+				jumpHost := JumpHost.Hostname
+				jumpHostUsername := JumpHost.Username
+				jumpHostPassword := JumpHost.Password
+				kubeconfig := KubeJumpHost.KubeconfigPath
+				namespace := KubeJumpHost.Namespace
+				svc := KubeJumpHost.Service
+				servicePort := KubeJumpHost.ServicePort
+				localPort := KubeJumpHost.LocalPort
+				executeSSHKubeJumpCommand(kubeconfig, namespace, svc, servicePort, localPort, jumpHost, jumpHostUsername, jumpHostPassword, TargetHost.Username, TargetHost.Password, TargetHost.Hostname)
+			case 2: // Kube
+				app.Stop()
+				kubeconfig := KubeJumpHost.KubeconfigPath
+				namespace := KubeJumpHost.Namespace
+				svc := KubeJumpHost.Service
+				servicePort := KubeJumpHost.ServicePort
+				localPort := KubeJumpHost.LocalPort
+				executeSSHKubeCommand(kubeconfig, namespace, svc, servicePort, localPort, TargetHost.Username, TargetHost.Password, TargetHost.Hostname)
+			case 3: // Jump
+				// fix jump option behavior
+				app.Stop()
+				jumpHost := JumpHost.Hostname
+				// jumpHostUsername := inventory[inventoryIndex].JumpHost.Username
+				// jumpHostPassword := inventory[inventoryIndex].JumpHost.Password
+				executeSSHCommand(TargetHost.Username, JumpHost.Password, jumpHost)
+			case 4: // Cancel
+				inModalDialog = false
+				app.SetRoot(list, true)
+			}
+		})
+
+	app.SetRoot(dialog, true)
+	switchHostList(app, list, ctx)
 }
