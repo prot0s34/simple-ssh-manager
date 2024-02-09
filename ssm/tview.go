@@ -27,10 +27,8 @@ func createHostList(app *tview.Application, ctx *AppContext) *tview.List {
 	for _, host := range selectedInventoryGroup.TargetHost {
 		list.AddItem("name:"+host.Name, "user:"+host.Username+" / hostname:"+host.Hostname, 0, nil).SetBorder(true)
 	}
-
 	list.SetTitle("[black:darkcyan]" + selectedInventoryGroup.Name + "[white:-]").SetTitleAlign(tview.AlignLeft)
 	list.Box.SetBorderAttributes(tcell.RuneBoard)
-
 	list.AddItem("", "'Q' to Quit, hjkl or ← ↓ ↑ → to navigate, 'Enter' to connect", 'q', func() {
 		app.Stop()
 	})
