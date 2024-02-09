@@ -17,20 +17,24 @@ func main() {
 		}
 	}()
 
-	app := tview.NewApplication()
-
 	inventoryGroups, err := loadInventoryGroups()
 	if err != nil {
 		fmt.Println("Error:", err)
 		os.Exit(1)
 	}
-	inventoryIndex = 0
 
-	list := createHostList(app, inventoryGroups[inventoryIndex].Hosts, inventoryGroups[inventoryIndex].Name)
+	ctx := &AppContext{
+		InventoryIndex: &inventoryIndex,
+		Inventory:      inventoryGroups,
+	}
 
-	setHostSelected(list, inventoryGroups[inventoryIndex].Hosts, app, inventoryGroups)
+	app := tview.NewApplication()
 
-	switchHostList(app, &inventoryIndex, inventoryGroups, list)
+	list := createHostList(app, ctx)
+
+	switchHostList(app, list, ctx)
+
+	setHostSelected(app, list, ctx)
 
 	if err := app.SetRoot(list, true).Run(); err != nil {
 		fmt.Println("Error:", err)
