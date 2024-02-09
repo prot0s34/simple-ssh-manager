@@ -30,11 +30,11 @@ func main() {
 
 	app := tview.NewApplication()
 
-	list := createHostList(app, ctx)
+	list := assembleHostList(app, nil, ctx, true)
 
 	switchHostList(app, list, ctx)
 
-	setHostSelected(app, list, ctx)
+	selectListItem(app, list, ctx)
 
 	if err := app.SetRoot(list, true).Run(); err != nil {
 		fmt.Println("Error:", err)

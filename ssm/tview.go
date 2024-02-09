@@ -8,22 +8,14 @@ import (
 	"github.com/rivo/tview"
 )
 
-func updateHostList(app *tview.Application, list *tview.List, hosts []TargetHost, inventoryName string) {
-	for _, host := range hosts {
-		list.AddItem("name:"+host.Name, "user:"+host.Username+" / hostname:"+host.Hostname, 0, nil).SetBorder(true)
-		list.SetTitle("[black:darkcyan]" + inventoryName + "[white:-]").SetTitleAlign(tview.AlignLeft)
-		list.Box.SetBorderAttributes(tcell.RuneBoard)
+func assembleHostList(app *tview.Application, list *tview.List, ctx *AppContext, createNew bool) *tview.List {
+	if createNew {
+		list = tview.NewList()
+	} else {
+		list.Clear()
 	}
-	list.AddItem("", "'Q' to Quit, hjkl or ← ↓ ↑ → to navigate, 'Enter' to connect", 'q', func() {
-		app.Stop()
-	})
-}
-
-func createHostList(app *tview.Application, ctx *AppContext) *tview.List {
-	list := tview.NewList()
 
 	selectedInventoryGroup := ctx.Inventory[*ctx.InventoryIndex]
-
 	for _, host := range selectedInventoryGroup.TargetHost {
 		list.AddItem("name:"+host.Name, "user:"+host.Username+" / hostname:"+host.Hostname, 0, nil).SetBorder(true)
 	}
@@ -45,11 +37,11 @@ func switchHostList(app *tview.Application, list *tview.List, ctx *AppContext) {
 		if event.Key() == tcell.KeyLeft || event.Rune() == 'h' {
 			*ctx.InventoryIndex = (*ctx.InventoryIndex - 1 + len(ctx.Inventory)) % len(ctx.Inventory)
 			list.Clear()
-			updateHostList(app, list, ctx.Inventory[*ctx.InventoryIndex].TargetHost, ctx.Inventory[*ctx.InventoryIndex].Name)
+			assembleHostList(app, list, ctx, false)
 		} else if event.Key() == tcell.KeyRight || event.Rune() == 'l' {
 			*ctx.InventoryIndex = (*ctx.InventoryIndex + 1) % len(ctx.Inventory)
 			list.Clear()
-			updateHostList(app, list, ctx.Inventory[*ctx.InventoryIndex].TargetHost, ctx.Inventory[*ctx.InventoryIndex].Name)
+			assembleHostList(app, list, ctx, false)
 		}
 
 		if event.Rune() == 'j' && list.GetCurrentItem() < list.GetItemCount()-1 {
@@ -62,7 +54,7 @@ func switchHostList(app *tview.Application, list *tview.List, ctx *AppContext) {
 	})
 }
 
-func setHostSelected(app *tview.Application, list *tview.List, ctx *AppContext) {
+func selectListItem(app *tview.Application, list *tview.List, ctx *AppContext) {
 	list.SetSelectedFunc(func(index int, mainText, secondaryText string, shortcut rune) {
 
 		TargetHost := ctx.Inventory[*ctx.InventoryIndex].TargetHost[index]
