@@ -57,11 +57,12 @@ func selectListItem(app *tview.Application, list *tview.List, ctx *AppContext) {
 		TargetHost := ctx.Inventory[*ctx.InventoryIndex].TargetHost[index]
 		JumpHost := ctx.Inventory[*ctx.InventoryIndex].JumpHost
 		KubeJumpHost := ctx.Inventory[*ctx.InventoryIndex].KubeJumpHost
-		showModalOnListItem(app, list, ctx, TargetHost, JumpHost, KubeJumpHost)
+		showModalListItem(app, list, TargetHost, JumpHost, KubeJumpHost)
+		switchHostList(app, list, ctx)
 	})
 }
 
-func showModalOnListItem(app *tview.Application, list *tview.List, ctx *AppContext, TargetHost TargetHost, JumpHost JumpHost, KubeJumpHost KubeJumpHost) {
+func showModalListItem(app *tview.Application, list *tview.List, TargetHost TargetHost, JumpHost JumpHost, KubeJumpHost KubeJumpHost) {
 	inModalDialog = true
 	dialog := tview.NewModal().
 		SetText("Choose a jumphost option for host: " + TargetHost.Name).
@@ -71,33 +72,16 @@ func showModalOnListItem(app *tview.Application, list *tview.List, ctx *AppConte
 			switch buttonIndex {
 			case 0: // None
 				app.Stop()
-				executeSSHCommand(TargetHost.Username, TargetHost.Password, TargetHost.Hostname)
+				connectTarget(TargetHost)
 			case 1: // Kube + Jump
 				app.Stop()
-				jumpHost := JumpHost.Hostname
-				jumpHostUsername := JumpHost.Username
-				jumpHostPassword := JumpHost.Password
-				kubeconfig := KubeJumpHost.KubeconfigPath
-				namespace := KubeJumpHost.Namespace
-				svc := KubeJumpHost.Service
-				servicePort := KubeJumpHost.ServicePort
-				localPort := KubeJumpHost.LocalPort
-				executeSSHKubeJumpCommand(kubeconfig, namespace, svc, servicePort, localPort, jumpHost, jumpHostUsername, jumpHostPassword, TargetHost.Username, TargetHost.Password, TargetHost.Hostname)
+				connectKubeJumpTarget(KubeJumpHost, JumpHost, TargetHost)
 			case 2: // Kube
 				app.Stop()
-				kubeconfig := KubeJumpHost.KubeconfigPath
-				namespace := KubeJumpHost.Namespace
-				svc := KubeJumpHost.Service
-				servicePort := KubeJumpHost.ServicePort
-				localPort := KubeJumpHost.LocalPort
-				executeSSHKubeCommand(kubeconfig, namespace, svc, servicePort, localPort, TargetHost.Username, TargetHost.Password, TargetHost.Hostname)
+				connectKubeTarget(KubeJumpHost, TargetHost)
 			case 3: // Jump
-				// fix jump option behavior
 				app.Stop()
-				jumpHost := JumpHost.Hostname
-				// jumpHostUsername := inventory[inventoryIndex].JumpHost.Username
-				// jumpHostPassword := inventory[inventoryIndex].JumpHost.Password
-				executeSSHCommand(TargetHost.Username, JumpHost.Password, jumpHost)
+				connectJumpTarget(JumpHost, TargetHost)
 			case 4: // Cancel
 				inModalDialog = false
 				app.SetRoot(list, true)
@@ -105,5 +89,4 @@ func showModalOnListItem(app *tview.Application, list *tview.List, ctx *AppConte
 		})
 
 	app.SetRoot(dialog, true)
-	switchHostList(app, list, ctx)
 }

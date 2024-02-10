@@ -6,18 +6,18 @@ import (
 	"log"
 )
 
-func executeSSHCommand(targetUsername, targetPassword, targetHost string) {
-	log.Printf("Configuring SSH client for %s...\n", targetHost)
+func connectTarget(TargetHost TargetHost) {
+	log.Printf("Configuring SSH client for %s...\n", TargetHost.Hostname)
 	config := &ssh.ClientConfig{
-		User: targetUsername,
+		User: TargetHost.Username,
 		Auth: []ssh.AuthMethod{
-			ssh.Password(targetPassword),
+			ssh.Password(TargetHost.Password),
 		},
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}
 
-	log.Printf("Connecting to SSH server %s...\n", targetHost)
-	client, err := ssh.Dial("tcp", targetHost+":22", config)
+	log.Printf("Connecting to SSH server %s...\n", TargetHost.Hostname)
+	client, err := ssh.Dial("tcp", TargetHost.Hostname+":22", config)
 	if err != nil {
 		log.Fatalf("Failed to dial: %s", err)
 	}
@@ -38,18 +38,18 @@ func executeSSHCommand(targetUsername, targetPassword, targetHost string) {
 	}
 }
 
-func executeSSHJumpCommand(jumpUsername, jumpPassword, jumpHost, targetUsername, targetPassword, targetHost string) {
+func connectJumpTarget(JumpHost JumpHost, TargetHost TargetHost) {
 	log.Println("Configuring SSH client for jump host...")
 	jumpConfig := &ssh.ClientConfig{
-		User: jumpUsername,
+		User: JumpHost.Username,
 		Auth: []ssh.AuthMethod{
-			ssh.Password(jumpPassword),
+			ssh.Password(JumpHost.Password),
 		},
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}
 
-	log.Printf("Connecting to jump host %s...\n", jumpHost)
-	jumpClient, err := ssh.Dial("tcp", jumpHost+":22", jumpConfig)
+	log.Printf("Connecting to jump host %s...\n", JumpHost.Hostname)
+	jumpClient, err := ssh.Dial("tcp", JumpHost.Hostname+":22", jumpConfig)
 	if err != nil {
 		log.Fatalf("Failed to dial jump host: %s", err)
 	}
@@ -58,20 +58,20 @@ func executeSSHJumpCommand(jumpUsername, jumpPassword, jumpHost, targetUsername,
 
 	log.Println("Configuring SSH client for target host...")
 	targetConfig := &ssh.ClientConfig{
-		User: targetUsername,
+		User: TargetHost.Username,
 		Auth: []ssh.AuthMethod{
-			ssh.Password(targetPassword),
+			ssh.Password(TargetHost.Password),
 		},
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}
 
-	log.Printf("Establishing connection to target host %s through jump host...\n", targetHost)
-	conn, err := jumpClient.Dial("tcp", targetHost+":22")
+	log.Printf("Establishing connection to target host %s through jump host...\n", TargetHost.Hostname)
+	conn, err := jumpClient.Dial("tcp", TargetHost.Hostname+":22")
 	if err != nil {
 		log.Fatalf("Failed to dial target host from jump host: %s", err)
 	}
 
-	ncc, chans, reqs, err := ssh.NewClientConn(conn, targetHost, targetConfig)
+	ncc, chans, reqs, err := ssh.NewClientConn(conn, TargetHost.Hostname, targetConfig)
 	if err != nil {
 		log.Fatalf("Failed to create new SSH client connection to target host: %s", err)
 	}
@@ -90,9 +90,9 @@ func executeSSHJumpCommand(jumpUsername, jumpPassword, jumpHost, targetUsername,
 	}
 }
 
-func executeSSHKubeCommand(kubeconfigPath string, namespace string, svc string, servicePort int, localPort int, targetUsername string, targetPassword string, targetHost string) {
+func connectKubeTarget(KubeJumpHost KubeJumpHost, TargetHost TargetHost) {
 
-	portForwardCmd, err := startPortForwarding(kubeconfigPath, namespace, svc, servicePort, localPort)
+	portForwardCmd, err := startPortForwarding(KubeJumpHost)
 	if err != nil {
 		log.Fatalf("Error starting port forwarding: %v", err)
 	}
@@ -100,15 +100,15 @@ func executeSSHKubeCommand(kubeconfigPath string, namespace string, svc string, 
 		defer portForwardCmd.Process.Kill()
 	}
 
-	conn, err := setupProxyDialer(localPort, targetHost)
+	conn, err := setupProxyDialer(KubeJumpHost.LocalPort, TargetHost.Hostname)
 	if err != nil {
 		log.Fatalf("Error setting up proxy dialer: %v", err)
 	}
 
 	log.Println("Setting up SSH connection...")
-	ncc, chans, reqs, err := ssh.NewClientConn(conn, fmt.Sprintf("%s:%d", targetHost, 22), &ssh.ClientConfig{
-		User:            targetUsername,
-		Auth:            []ssh.AuthMethod{ssh.Password(targetPassword)},
+	ncc, chans, reqs, err := ssh.NewClientConn(conn, fmt.Sprintf("%s:%d", TargetHost.Hostname, 22), &ssh.ClientConfig{
+		User:            TargetHost.Username,
+		Auth:            []ssh.AuthMethod{ssh.Password(TargetHost.Password)},
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	})
 	if err != nil {
@@ -131,9 +131,9 @@ func executeSSHKubeCommand(kubeconfigPath string, namespace string, svc string, 
 	}
 }
 
-func executeSSHKubeJumpCommand(kubeconfigPath string, namespace string, svc string, servicePort int, localPort int, jumpHost, jumpUsername, jumpPassword, targetUsername, targetPassword, targetHost string) {
+func connectKubeJumpTarget(KubeJumpHost KubeJumpHost, JumpHost JumpHost, TargetHost TargetHost) {
 
-	portForwardCmd, err := startPortForwarding(kubeconfigPath, namespace, svc, servicePort, localPort)
+	portForwardCmd, err := startPortForwarding(KubeJumpHost)
 	if err != nil {
 		log.Fatalf("Error starting port forwarding: %v", err)
 	}
@@ -141,42 +141,42 @@ func executeSSHKubeJumpCommand(kubeconfigPath string, namespace string, svc stri
 		defer portForwardCmd.Process.Kill()
 	}
 
-	conn, err := setupProxyDialer(localPort, targetHost)
+	conn, err := setupProxyDialer(KubeJumpHost.LocalPort, TargetHost.Hostname)
 	if err != nil {
 		log.Fatalf("Error setting up proxy dialer: %v", err)
 	}
 
 	jumpHostConfig := &ssh.ClientConfig{
-		User: jumpUsername,
+		User: JumpHost.Username,
 		Auth: []ssh.AuthMethod{
-			ssh.Password(jumpPassword),
+			ssh.Password(JumpHost.Password),
 		},
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}
 
-	log.Printf("Connecting to jump host %s...\n", jumpHost)
-	jumpHostSSHConn, chans, reqs, err := ssh.NewClientConn(conn, jumpHost, jumpHostConfig)
+	log.Printf("Connecting to jump host %s...\n", JumpHost.Hostname)
+	jumpHostSSHConn, chans, reqs, err := ssh.NewClientConn(conn, JumpHost.Hostname, jumpHostConfig)
 	if err != nil {
 		log.Fatalf("Failed to establish SSH connection to jump host: %s", err)
 	}
 	jumpHostClient := ssh.NewClient(jumpHostSSHConn, chans, reqs)
 	defer jumpHostClient.Close()
 
-	log.Printf("Connecting to target host %s via jump host...\n", targetHost)
+	log.Printf("Connecting to target host %s via jump host...\n", TargetHost.Hostname)
 	targetHostConfig := &ssh.ClientConfig{
-		User: targetUsername,
+		User: TargetHost.Username,
 		Auth: []ssh.AuthMethod{
-			ssh.Password(targetPassword),
+			ssh.Password(TargetHost.Password),
 		},
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}
 
-	targetHostConn, err := jumpHostClient.Dial("tcp", fmt.Sprintf("%s:%d", targetHost, 22))
+	targetHostConn, err := jumpHostClient.Dial("tcp", fmt.Sprintf("%s:%d", TargetHost.Hostname, 22))
 	if err != nil {
 		log.Fatalf("Failed to dial target host via jump host: %s", err)
 	}
 
-	targetHostSSHConn, chans, reqs, err := ssh.NewClientConn(targetHostConn, targetHost, targetHostConfig)
+	targetHostSSHConn, chans, reqs, err := ssh.NewClientConn(targetHostConn, TargetHost.Hostname, targetHostConfig)
 	if err != nil {
 		log.Fatalf("Failed to establish SSH connection to target host: %s", err)
 	}
