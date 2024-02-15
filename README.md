@@ -91,6 +91,7 @@ chmod +x /usr/local/bin/sshmanager
 
 ### ⚠️ TO FIX:
 - "Recovered from panic: runtime error: index out of range [n] with length n" after quit app with 'q' (meanwhile, signal from ctrl+c handled correctly)
+- localPort don't closes if ssh auth error happens
 
 ### ⛽ Changelog:
 - 2024.02.07 refactoring connection func, change pod port-forwarding to service port-forwarding
